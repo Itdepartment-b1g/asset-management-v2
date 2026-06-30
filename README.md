@@ -1,36 +1,129 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Next.js + Supabase Starter Template
 
-## Getting Started
+A full-stack starter template with **Next.js 16**, **TypeScript**, **Prisma 7**, **local Supabase (Docker)**, **Redux Toolkit**, and **OpenAPI/Swagger** docs. Clone this repo, update the schema and UI for your domain, and ship to **Vercel + Supabase Cloud** — no separate backend server required.
 
-First, run the development server:
+For a deep dive into layers, conventions, and how to add new CRUD resources, see **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**.
+
+## Tech stack
+
+| Layer | Technology |
+|-------|------------|
+| Framework | Next.js 16 (App Router) |
+| Language | TypeScript |
+| Styling | Tailwind CSS v4 |
+| Database | PostgreSQL via Supabase |
+| ORM | Prisma 7 (`@prisma/adapter-pg`) |
+| Client state | Redux Toolkit + React Redux |
+| API docs | OpenAPI 3 + Swagger UI (`swagger-ui-dist`) |
+| Deploy | Vercel (app) + Supabase Cloud (database) |
+
+## Prerequisites
+
+- **Node.js 20+**
+- **Docker** (for local Supabase)
+- **Supabase CLI** (run via `npx supabase`)
+
+## Quick start
 
 ```bash
+git clone <repo-url> my-new-project
+cd my-new-project
+npm install
+cp .env.example .env
+npx supabase start
+npx prisma migrate dev
+npx prisma generate
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+After `npx supabase start`, copy the local **API URL**, **anon key**, and **database URL** from the CLI output into your `.env` file. See [.env.example](.env.example) for the required variables.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Local URLs
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Service | URL |
+|---------|-----|
+| App | http://localhost:3000 |
+| Supabase Studio | http://127.0.0.1:54323 |
+| API docs (Swagger) | http://localhost:3000/docs |
+| OpenAPI JSON | http://localhost:3000/api/openapi |
 
-## Learn More
+## Project structure
 
-To learn more about Next.js, take a look at the following resources:
+```
+src/
+├── app/                    # Routes + API route handlers
+│   ├── api/categories/     # HTTP entry (GET/POST/PATCH/DELETE)
+│   ├── categories/         # UI page
+│   └── docs/               # Swagger UI
+├── server/                 # Backend logic (server-only)
+│   ├── controllers/        # Validation + HTTP responses
+│   ├── repositories/       # Prisma queries
+│   └── prisma/client.ts    # Prisma + pg adapter
+├── components/             # React UI
+│   ├── categories/         # Entity-specific UI (reference CRUD)
+│   ├── common/             # Shared UI (AsyncStatus, etc.)
+│   └── providers/          # ReduxProvider
+├── lib/store/              # Redux store + slices (API calls in thunks)
+└── generated/prisma/       # Prisma client output (do not edit)
+prisma/schema.prisma        # Database schema
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Full architecture guide: **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Routes
 
-## Deploy on Vercel
+| Route | Purpose |
+|-------|---------|
+| `/` | Home links |
+| `/categories` | Categories CRUD UI |
+| `/docs` | Swagger API docs |
+| `/api/categories` | REST API |
+| `/api/openapi` | OpenAPI JSON spec |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Scripts
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Command | Purpose |
+|---------|---------|
+| `npm run dev` | Start dev server |
+| `npm run build` | Production build |
+| `npm run start` | Run production build locally |
+| `npx supabase start` | Start local Postgres + Studio |
+| `npx supabase stop` | Stop local Supabase |
+| `npx prisma migrate dev` | Apply migrations (development) |
+| `npx prisma migrate deploy` | Apply migrations (production) |
+| `npx prisma generate` | Regenerate Prisma client |
+
+## Deployment (Vercel + Supabase Cloud)
+
+You only need **two services** — no separate backend on Render, DigitalOcean, or Hostinger.
+
+1. Create a **Supabase Cloud** project and copy the production Postgres connection string.
+2. Connect this repo to **Vercel** and deploy.
+3. Set environment variables in Vercel:
+   - `DATABASE_URL` — Supabase Cloud Postgres connection string
+   - `NEXT_PUBLIC_SUPABASE_URL` — Supabase project URL
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY` — Supabase anon key
+4. Run migrations against production once:
+
+   ```bash
+   DATABASE_URL="your-production-url" npx prisma migrate deploy
+   ```
+
+The deployed Next.js app serves both the UI and `/api/*` routes. Backend logic in `src/server/` runs inside Vercel — not as a separate service.
+
+## Adding new resources
+
+The `categories` module is the reference implementation for full CRUD. To add departments, employees, or any other entity, copy that pattern.
+
+See **[Adding a new CRUD resource](docs/ARCHITECTURE.md#adding-a-new-crud-resource)** in the architecture guide.
+
+## Cloning for a new project
+
+When you fork or clone this repo for a new app:
+
+1. Update app title/metadata in `src/app/layout.tsx` and `src/app/page.tsx`
+2. Edit `prisma/schema.prisma` for your domain models
+3. Run `npx prisma migrate dev` after schema changes
+4. Copy the `categories` pattern for each new entity (backend + frontend + Redux slice)
+5. Extend `src/lib/openapi.ts` with new API paths
+6. Update `.env` locally and env vars on Vercel
