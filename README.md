@@ -2,7 +2,7 @@
 
 A full-stack starter template with **Next.js 16**, **TypeScript**, **Prisma 7**, **local Supabase (Docker)**, **Redux Toolkit**, and **OpenAPI/Swagger** docs. Clone this repo, update the schema and UI for your domain, and ship to **Vercel + Supabase Cloud** — no separate backend server required.
 
-For a deep dive into layers, conventions, and how to add new CRUD resources, see **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**.
+For a deep dive into layers, conventions, and how to add new CRUD resources, see **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**. For authentication and the Prisma vs RLS model, see **[docs/SECURITY.md](docs/SECURITY.md)**.
 
 ## Tech stack
 
@@ -15,6 +15,7 @@ For a deep dive into layers, conventions, and how to add new CRUD resources, see
 | Database     | PostgreSQL via Supabase                    |
 | ORM          | Prisma 7 (`@prisma/adapter-pg`)            |
 | Client state | Redux Toolkit + React Redux                |
+| Auth         | Supabase Auth (`@supabase/ssr`)              |
 | API docs     | OpenAPI 3 + Swagger UI (`swagger-ui-dist`) |
 | Deploy       | Vercel (app) + Supabase Cloud (database)   |
 
@@ -44,6 +45,13 @@ npm run dev
 
 After `npx supabase start`, copy the local **API URL**, **anon key**, and **database URL** from the CLI output into your `.env` file. See [.env.example](.env.example) for the required variables.
 
+### Auth
+
+1. Open [http://localhost:3000/signup](http://localhost:3000/signup) — enter full name, email, and password
+2. Or sign in at [http://localhost:3000/login](http://localhost:3000/login)
+3. Auth goes through `POST /api/auth/signup` or `POST /api/auth/login` (creates `public.user` profile row)
+4. `/categories` and `/api/categories` require a signed-in session; categories are scoped per user
+
 ### Local URLs
 
 
@@ -64,15 +72,19 @@ src/
 ├── app/                    # Routes + API route handlers
 │   ├── api/categories/     # HTTP entry (GET/POST/PATCH/DELETE)
 │   ├── categories/         # UI page
+│   ├── login/            # Sign in
+│   ├── signup/           # Sign up
 │   └── docs/               # Swagger UI
 ├── server/                 # Backend logic (server-only)
-│   ├── controllers/        # Validation + HTTP responses
-│   ├── repositories/       # Prisma queries
+│   ├── auth/               # Session helpers (requireAuthUser)
+│   ├── controllers/        # Validation + HTTP responses (categories, auth)
+│   ├── repositories/       # Prisma queries (categories, auth)
 │   └── prisma/client.ts    # Prisma + pg adapter
 ├── components/             # React UI
 │   ├── categories/         # Entity-specific UI (reference CRUD)
-│   ├── common/             # Shared UI (AsyncStatus, etc.)
+│   ├── common/             # Shared UI (AsyncStatus, LogoutButton, etc.)
 │   └── providers/          # ReduxProvider
+├── lib/supabase/           # Supabase Auth clients (browser, server)
 ├── lib/store/              # Redux store + slices (API calls in thunks)
 └── generated/prisma/       # Prisma client output (do not edit)
 prisma/schema.prisma        # Database schema
@@ -86,9 +98,13 @@ Full architecture guide: **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**
 | Route             | Purpose            |
 | ----------------- | ------------------ |
 | `/`               | Home links         |
-| `/categories`     | Categories CRUD UI |
+| `/login`          | Sign in            |
+| `/signup`         | Create account     |
+| `/api/auth/login` | Sign in API        |
+| `/api/auth/signup`| Create account API |
+| `/categories`     | Categories CRUD UI (auth required) |
 | `/docs`           | Swagger API docs   |
-| `/api/categories` | REST API           |
+| `/api/categories` | REST API (auth required) |
 | `/api/openapi`    | OpenAPI JSON spec  |
 
 

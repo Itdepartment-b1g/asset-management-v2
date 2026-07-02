@@ -7,75 +7,91 @@ datasource db {
   provider = "postgresql"
 }
 
-model asset_information {
-  id                   String    @id @default(uuid())
-  name                 String
-  code_name            String
-  brand_name           String
-  serial_number        String?
-  purchase_date        DateTime?
-  status               String
-  remarks              String?
-  vendor_name          String?
-  value                Float?
-  warranty_end_date    DateTime?
-  warranty_information String?
-  warranty_document    String?
-  life_end_date        DateTime?
-  agreement_document   String?
-  date_issue           DateTime?
-  created_at           DateTime  @default(now())
-  updated_at           DateTime  @updatedAt
-
-  currently_issued_to_id String?
-  currently_issued_to    employees? @relation("current_issue", fields: [currently_issued_to_id], references: [id])
-
-  categories           categories[]
-  departments          departments[]
-  locations            location[]
-  conditions           conditions[]
-  originally_issued_to employees[]   @relation("original_issue")
+model user {
+  id         String       @id
+  email      String?      @unique
+  full_name  String?
+  created_at DateTime     @default(now())
+  updated_at DateTime     @updatedAt
+  categories categories[]
 }
 
 model categories {
-  id                String              @id @default(uuid())
-  title             String
-  created_at        DateTime            @default(now())
-  updated_at        DateTime            @updatedAt
-  asset_information asset_information[]
+  id         String   @id @default(uuid())
+  user_id    String
+  title      String
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  user user @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
 }
 
-model departments {
-  id                String              @id @default(uuid())
-  title             String
-  created_at        DateTime            @default(now())
-  updated_at        DateTime            @updatedAt
-  asset_information asset_information[]
-}
 
-model conditions {
-  id                String              @id @default(uuid())
-  title             String
-  created_at        DateTime            @default(now())
-  updated_at        DateTime            @updatedAt
-  asset_information asset_information[]
-}
 
-model employees {
-  id                       String              @id @default(uuid())
-  name                     String
-  created_at               DateTime            @default(now())
-  updated_at               DateTime            @updatedAt
-  originally_issued_assets asset_information[] @relation("original_issue")
-  currently_issued_assets  asset_information[] @relation("current_issue")
-}
+// model asset_information {
+//   id                   String    @id @default(uuid())
+//   name                 String
+//   code_name            String
+//   brand_name           String
+//   serial_number        String?
+//   purchase_date        DateTime?
+//   status               String
+//   remarks              String?
+//   vendor_name          String?
+//   value                Float?
+//   warranty_end_date    DateTime?
+//   warranty_information String?
+//   warranty_document    String?
+//   life_end_date        DateTime?
+//   agreement_document   String?
+//   date_issue           DateTime?
+//   created_at           DateTime  @default(now())
+//   updated_at           DateTime  @updatedAt
 
-model location {
-  id                String              @id @default(uuid())
-  name              String
-  long              String?
-  lat               String?
-  created_at        DateTime            @default(now())
-  updated_at        DateTime            @updatedAt
-  asset_information asset_information[]
-}
+//   currently_issued_to_id String?
+//   currently_issued_to    employees? @relation("current_issue", fields: [currently_issued_to_id], references: [id])
+
+//   categories           categories[]
+//   departments          departments[]
+//   locations            location[]
+//   conditions           conditions[]
+//   originally_issued_to employees[]   @relation("original_issue")
+// }
+
+
+// model departments {
+//   id                String              @id @default(uuid())
+//   title             String
+//   created_at        DateTime            @default(now())
+//   updated_at        DateTime            @updatedAt
+//   asset_information asset_information[]
+// }
+
+// model conditions {
+//   id                String              @id @default(uuid())
+//   title             String
+//   created_at        DateTime            @default(now())
+//   updated_at        DateTime            @updatedAt
+//   asset_information asset_information[]
+// }
+
+// model employees {
+//   id                       String              @id @default(uuid())
+//   name                     String
+//   created_at               DateTime            @default(now())
+//   updated_at               DateTime            @updatedAt
+//   originally_issued_assets asset_information[] @relation("original_issue")
+//   currently_issued_assets  asset_information[] @relation("current_issue")
+// }
+
+// model location {
+//   id                String              @id @default(uuid())
+//   name              String
+//   long              String?
+//   lat               String?
+//   created_at        DateTime            @default(now())
+//   updated_at        DateTime            @updatedAt
+//   asset_information asset_information[]
+// }

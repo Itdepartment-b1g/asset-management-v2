@@ -13,12 +13,18 @@ export type Category = {
 
 type ApiError = { error: string };
 
+const fetchOptions: RequestInit = {
+  credentials: "include",
+};
+
 async function parseResponse<T>(response: Response): Promise<T> {
   const data = await response.json();
 
   if (!response.ok) {
     const message = (data as ApiError).error ?? "Request failed";
-    throw new Error(message);
+    const error = new Error(message) as Error & { status?: number };
+    error.status = response.status;
+    throw error;
   }
 
   return data as T;
@@ -39,7 +45,10 @@ const initialState: CategoriesState = {
 export const fetchCategories = createAsyncThunk(
   "categories/fetchAll",
   async () => {
-    const response = await fetch("/api/categories", { cache: "no-store" });
+    const response = await fetch("/api/categories", {
+      ...fetchOptions,
+      cache: "no-store",
+    });
     return parseResponse<Category[]>(response);
   },
 );
@@ -48,6 +57,7 @@ export const addCategory = createAsyncThunk(
   "categories/create",
   async (title: string) => {
     const response = await fetch("/api/categories", {
+      ...fetchOptions,
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title }),
@@ -60,6 +70,7 @@ export const editCategory = createAsyncThunk(
   "categories/update",
   async ({ id, title }: { id: string; title: string }) => {
     const response = await fetch("/api/categories", {
+      ...fetchOptions,
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, title }),
@@ -72,6 +83,7 @@ export const removeCategory = createAsyncThunk(
   "categories/delete",
   async (id: string) => {
     const response = await fetch(`/api/categories?id=${id}`, {
+      ...fetchOptions,
       method: "DELETE",
     });
     await parseResponse<{ success: boolean }>(response);

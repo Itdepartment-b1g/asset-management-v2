@@ -39,8 +39,11 @@ Each layer has a single responsibility. Data flows **down** on reads/writes; HTT
 | Layer | Path | Responsibility | Example |
 |-------|------|----------------|---------|
 | API route | `src/app/api/categories/route.ts` | Parse HTTP method, query params, and body; delegate to controller | `GET ?id=` for one, `GET` for list |
+| API route | `src/app/api/auth/[action]/route.ts` | Auth endpoints | Delegates to handlers in `auth.ts` |
 | Controller | `src/server/controllers/categories_controller.ts` | Validate input, map errors to status codes, return `NextResponse` | 400 when `title` is missing, 404 when not found |
+| Controller | `src/server/controllers/auth_controller.ts` | Supabase Auth + sync `public.user` | Signup creates profile row |
 | Repository | `src/server/repositories/categories_repository.ts` | Prisma queries only; no HTTP knowledge | `findAll`, `create`, `update`, `delete` |
+| Repository | `src/server/repositories/auth_repository.ts` | Prisma user profile queries | `create`, `upsertFromAuth` |
 | Prisma client | `src/server/prisma/client.ts` | Singleton client with `@prisma/adapter-pg` | Connects via `DATABASE_URL` |
 
 ### Backend rules
@@ -105,7 +108,35 @@ All API errors return:
 { "error": "Human-readable message" }
 ```
 
-With an appropriate HTTP status code (`400`, `404`, `500`, etc.).
+With an appropriate HTTP status code (`400`, `401`, `403`, `404`, `500`, etc.).
+
+## Security: Prisma and Supabase RLS
+
+This template connects to Postgres through **Prisma** using `DATABASE_URL` (direct connection). **Row Level Security (RLS) in Supabase does not apply** on this path. RLS only applies when clients use the Supabase Data API (PostgREST) with the anon or authenticated key and a valid JWT.
+
+**Implication:** access control must be implemented in your **API routes and controllers**, not assumed from RLS policies.
+
+### Authentication (Supabase Auth)
+
+| Piece | Location |
+|-------|----------|
+| Login / signup UI | `/login`, `/signup` |
+| Auth API | `POST /api/auth/login`, `POST /api/auth/signup` |
+| Auth layers | `auth_controller.ts` → `auth_repository.ts` → `public.user` |
+| Session cookies | `@supabase/ssr` via `src/lib/supabase/*` |
+| Session helpers | `src/server/auth/session.ts` — `getSessionUser()`, `requireAuthUser()` |
+| UI protection | Client redirect to `/login` on 401 from API |
+| API protection | `requireAuthUser()` at the start of protected route handlers |
+
+On signup/login, Supabase Auth handles credentials; `auth_repository` creates or upserts a matching row in `public.user` (same `id` as `auth.users`).
+
+Client `fetch()` calls must use `credentials: "include"` so session cookies are sent.
+
+### Categories access model
+
+The reference `categories` module is **per-user** — each row has `user_id`, and repository queries are scoped by the authenticated user's id from the session.
+
+See **[SECURITY.md](./SECURITY.md)** for a quick checklist.
 
 ## Frontend architecture
 
@@ -218,8 +249,8 @@ See [.env.example](../.env.example):
 | Variable | Used for |
 |----------|----------|
 | `DATABASE_URL` | Prisma connection to Postgres (local or cloud) |
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL (reserved for future Auth/client usage) |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key (reserved for future Auth/client usage) |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL (Auth) |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key (Auth) |
 
 After `npx supabase start`, the CLI prints the local values for all three.
 
@@ -248,6 +279,7 @@ Use `categories` as the template. Below, `{entity}` is your resource name (e.g. 
 4. **API route** — Create `src/app/api/{entity}/route.ts`
    - Copy `src/app/api/categories/route.ts`
    - Wire to your new controller
+   - Call `requireAuthUser()` on every handler
 
 5. **OpenAPI** — Add paths and schemas to `src/lib/openapi.ts`
 
@@ -300,8 +332,16 @@ Use `categories` as the template. Below, `{entity}` is your resource name (e.g. 
 ### Verify
 
 11. Run `npm run build` — fix any TypeScript errors
-12. Test CRUD at `http://localhost:3000/{entity}`
+12. Test CRUD at `http://localhost:3000/{entity}` (signed in)
 13. Confirm new endpoints appear at `http://localhost:3000/docs`
+14. Confirm unauthenticated API calls return **401**
+
+### Authorization checklist
+
+- [ ] Is data public, auth-only shared, or per-user?
+- [ ] `requireAuthUser()` in API route
+- [ ] `credentials: "include"` in Redux slice fetches
+- [ ] If per-user: `user_id` column + scoped repository queries
 
 ## What to modify when cloning
 

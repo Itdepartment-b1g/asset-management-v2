@@ -1,8 +1,10 @@
 import { configureStore } from "@reduxjs/toolkit";
+import authReducer from "@/lib/store/auth";
 import categoriesReducer from "@/lib/store/categories-slice";
 
 export const store = configureStore({
   reducer: {
+    auth: authReducer,
     categories: categoriesReducer,
   },
 });

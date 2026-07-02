@@ -1,16 +1,20 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { CreateDialog } from "@/components/categories/dialogs/create-dialog";
 import { DeleteDialog } from "@/components/categories/dialogs/delete-dialog";
 import { EditDialog } from "@/components/categories/dialogs/edit-dialog";
 import { CategoriesTable } from "@/components/categories/table/categories-table";
 import { AsyncStatus } from "@/components/common/async-status";
+import { LogoutButton } from "@/components/common/logout-button";
 import { fetchCategories, type Category } from "@/lib/store/categories-slice";
 import { useAppDispatch, useAppSelector } from "@/lib/store/hooks";
 
 export default function CategoriesList() {
   const dispatch = useAppDispatch();
+  const router = useRouter();
   const { items, loading, error } = useAppSelector((state) => state.categories);
 
   const [createOpen, setCreateOpen] = useState(false);
@@ -21,8 +25,15 @@ export default function CategoriesList() {
   );
 
   useEffect(() => {
-    void dispatch(fetchCategories());
-  }, [dispatch]);
+    void dispatch(fetchCategories()).then((result) => {
+      if (
+        fetchCategories.rejected.match(result) &&
+        result.error.message === "Unauthorized"
+      ) {
+        router.push("/login?next=/categories");
+      }
+    });
+  }, [dispatch, router]);
 
   function handleEdit(category: Category) {
     setSelectedCategory(category);
@@ -36,6 +47,16 @@ export default function CategoriesList() {
 
   return (
     <div className="flex flex-col gap-6">
+      <div className="flex items-center justify-between gap-4">
+        <Link
+          href="/"
+          className="text-sm font-medium text-zinc-600 hover:text-zinc-900"
+        >
+          ← Home
+        </Link>
+        <LogoutButton />
+      </div>
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-zinc-900">Categories</h1>
@@ -66,10 +87,7 @@ export default function CategoriesList() {
         />
       )}
 
-      <CreateDialog 
-      open={createOpen}
-      onClose={() => setCreateOpen(false)   
-      } />
+      <CreateDialog open={createOpen} onClose={() => setCreateOpen(false)} />
 
       <EditDialog
         open={editOpen}

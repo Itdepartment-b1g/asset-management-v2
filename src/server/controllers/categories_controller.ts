@@ -1,18 +1,20 @@
 import "server-only";
 
+// Categories are scoped per user (user_id). Copy this pattern for user-owned resources.
+
 import { NextResponse } from "next/server";
 import { categoriesRepository } from "@/server/repositories/categories_repository";
 
 type CategoryBody = { id?: string; title?: string };
 
 export const categoriesController = {
-  async list() {
-    const categories = await categoriesRepository.findAll();
+  async list(userId: string) {
+    const categories = await categoriesRepository.findAll(userId);
     return NextResponse.json(categories);
   },
 
-  async getById(id: string) {
-    const category = await categoriesRepository.findById(id);
+  async getById(id: string, userId: string) {
+    const category = await categoriesRepository.findById(id, userId);
 
     if (!category) {
       return NextResponse.json({ error: "Category not found" }, { status: 404 });
@@ -21,18 +23,18 @@ export const categoriesController = {
     return NextResponse.json(category);
   },
 
-  async create(body: CategoryBody) {
+  async create(body: CategoryBody, userId: string) {
     const title = body.title?.trim();
 
     if (!title) {
       return NextResponse.json({ error: "title is required" }, { status: 400 });
     }
 
-    const category = await categoriesRepository.create(title);
+    const category = await categoriesRepository.create(userId, title);
     return NextResponse.json(category, { status: 201 });
   },
 
-  async update(body: CategoryBody) {
+  async update(body: CategoryBody, userId: string) {
     const id = body.id?.trim();
     const title = body.title?.trim();
 
@@ -44,24 +46,34 @@ export const categoriesController = {
       return NextResponse.json({ error: "title is required" }, { status: 400 });
     }
 
-    const existing = await categoriesRepository.findById(id);
+    const existing = await categoriesRepository.findById(id, userId);
 
     if (!existing) {
       return NextResponse.json({ error: "Category not found" }, { status: 404 });
     }
 
-    const category = await categoriesRepository.update(id, title);
+    const category = await categoriesRepository.update(id, userId, title);
+
+    if (!category) {
+      return NextResponse.json({ error: "Category not found" }, { status: 404 });
+    }
+
     return NextResponse.json(category);
   },
 
-  async remove(id: string) {
-    const existing = await categoriesRepository.findById(id);
+  async remove(id: string, userId: string) {
+    const existing = await categoriesRepository.findById(id, userId);
 
     if (!existing) {
       return NextResponse.json({ error: "Category not found" }, { status: 404 });
     }
 
-    await categoriesRepository.delete(id);
+    const result = await categoriesRepository.delete(id, userId);
+
+    if (result.count === 0) {
+      return NextResponse.json({ error: "Category not found" }, { status: 404 });
+    }
+
     return NextResponse.json({ success: true });
   },
 

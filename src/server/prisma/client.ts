@@ -10,8 +10,22 @@ function createPrismaClient() {
   return new PrismaClient({ adapter });
 }
 
-export const prisma = globalForPrisma.prisma ?? createPrismaClient();
+function getPrismaClient() {
+  const cached = globalForPrisma.prisma;
 
-if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma;
+  // Recreate after schema changes — dev hot reload can keep an old client
+  // without newly added model delegates (e.g. prisma.user).
+  if (cached && "user" in cached && "categories" in cached) {
+    return cached;
+  }
+
+  const client = createPrismaClient();
+
+  if (process.env.NODE_ENV !== "production") {
+    globalForPrisma.prisma = client;
+  }
+
+  return client;
 }
+
+export const prisma = getPrismaClient();
