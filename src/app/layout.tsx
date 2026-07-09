@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "NEXT JS AND SUPABASE FOLDER STRUCTURE",
+  title: "Asset Management",
   description: "Practice project with Next.js, Prisma, and Supabase",
 };
 

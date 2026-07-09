@@ -8,6 +8,7 @@ export type AuthUser = {
   id: string;
   email: string | null;
   full_name: string | null;
+  role: string | null;
 };
 
 type ApiError = { error: string };
@@ -52,27 +53,6 @@ export const loginUser = createAsyncThunk(
   },
 );
 
-export const signupUser = createAsyncThunk(
-  "auth/signup",
-  async ({
-    email,
-    password,
-    full_name,
-  }: {
-    email: string;
-    password: string;
-    full_name?: string;
-  }) => {
-    const response = await fetch("/api/auth/signup", {
-      ...fetchOptions,
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password, full_name }),
-    });
-    return parseResponse<AuthUser>(response);
-  },
-);
-
 const authSlice = createSlice({
   name: "auth",
   initialState,
@@ -97,21 +77,6 @@ const authSlice = createSlice({
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message ?? "Failed to sign in";
-      })
-      .addCase(signupUser.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(
-        signupUser.fulfilled,
-        (state, action: PayloadAction<AuthUser>) => {
-          state.loading = false;
-          state.user = action.payload;
-        },
-      )
-      .addCase(signupUser.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.error.message ?? "Failed to sign up";
       });
   },
 });

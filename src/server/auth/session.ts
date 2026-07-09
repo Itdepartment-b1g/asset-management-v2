@@ -2,12 +2,13 @@ import "server-only";
 
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { authRepository } from "@/server/repositories/auth_repository";
+import { auth_repository } from "@/server/repositories/auth_repository";
 
 export type SessionUser = {
   id: string;
   email: string | null;
   full_name: string | null;
+  role: string | null;
 };
 
 export async function getSessionUser(): Promise<SessionUser | null> {
@@ -20,12 +21,13 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     return null;
   }
 
-  const profile = await authRepository.findById(user.id);
+  const profile = await auth_repository.find_by_id(user.id);
 
   return {
     id: user.id,
     email: profile?.email ?? user.email ?? null,
     full_name: profile?.full_name ?? null,
+    role: profile?.role ?? null,
   };
 }
 

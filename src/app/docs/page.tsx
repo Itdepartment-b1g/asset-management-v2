@@ -19,6 +19,13 @@ export default function ApiDocsPage() {
       SwaggerUIBundle({
         domNode: containerRef.current,
         url: "/api/openapi",
+        // swagger-ui types omit requestInterceptor; needed to send session cookies
+        ...({
+          requestInterceptor: (request: { credentials?: RequestCredentials }) => {
+            request.credentials = "include";
+            return request;
+          },
+        } as Record<string, unknown>),
       });
     }
 

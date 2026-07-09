@@ -58,7 +58,7 @@ After `npx supabase start`, copy the local **API URL**, **anon key**, and **data
 | Service            | URL                                                                    |
 | ------------------ | ---------------------------------------------------------------------- |
 | App                | [http://localhost:3000](http://localhost:3000)                         |
-| Supabase Studio    | [http://127.0.0.1:54323](http://127.0.0.1:54323)                       |
+| Supabase Studio    | [http://127.0.0.1:54333](http://127.0.0.1:54333)                       |
 | API docs (Swagger) | [http://localhost:3000/docs](http://localhost:3000/docs)               |
 | OpenAPI JSON       | [http://localhost:3000/api/openapi](http://localhost:3000/api/openapi) |
 
