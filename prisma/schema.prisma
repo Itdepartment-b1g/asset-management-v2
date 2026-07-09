@@ -20,70 +20,69 @@ model user {
   role       String?
   created_at DateTime     @default(now())
   updated_at DateTime     @updatedAt
+
+  currently_issued_assets  asset_information[] @relation("current_issue")
+  originally_issued_assets asset_information[] @relation("original_issue")
 }
 
-// model asset_information {
-//   id                   String    @id @default(uuid())
-//   name                 String
-//   code_name            String
-//   brand_name           String
-//   serial_number        String?
-//   purchase_date        DateTime?
-//   status               String
-//   remarks              String?
-//   vendor_name          String?
-//   value                Float?
-//   warranty_end_date    DateTime?
-//   warranty_information String?
-//   warranty_document    String?
-//   life_end_date        DateTime?
-//   agreement_document   String?
-//   date_issue           DateTime?
-//   created_at           DateTime  @default(now())
-//   updated_at           DateTime  @updatedAt
+model asset_information {
+  id String @id @default(uuid())
+  asset_name String
+  code_name String
+  serial_number String?
+  purchase_date DateTime?
+  current_condition String?
+  status String?
+  remarks String?
+  vendor_name String?
+  cost_value Float?
+  salvage_value Float?
+  warranty_end_date DateTime?
+  useful_life_end_date DateTime?
+  original_issue_date DateTime?
+  currently_issued_to_id String?
 
-//   currently_issued_to_id String?
-//   currently_issued_to    employees? @relation("current_issue", fields: [currently_issued_to_id], references: [id])
+  departments departments[]
+  locations locations[]
+  conditions conditions[]
+  legend legend[]
 
-//   categories           categories[]
-//   departments          departments[]
-//   locations            location[]
-//   conditions           conditions[]
-//   originally_issued_to employees[]   @relation("original_issue")
-// }
+  currently_issued_to user? @relation("current_issue", fields: [currently_issued_to_id], references: [id])
+  originally_issued_to user[]   @relation("original_issue")
+}
 
+model departments {
+  id String @id @default(uuid())
+  name String
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
-// model departments {
-//   id                String              @id @default(uuid())
-//   title             String
-//   created_at        DateTime            @default(now())
-//   updated_at        DateTime            @updatedAt
-//   asset_information asset_information[]
-// }
+  asset_information asset_information[]
+}
 
-// model conditions {
-//   id                String              @id @default(uuid())
-//   title             String
-//   created_at        DateTime            @default(now())
-//   updated_at        DateTime            @updatedAt
-//   asset_information asset_information[]
-// }
+model locations {
+  id String @id @default(uuid())
+  name String
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
-// model employees {
-//   id                       String              @id @default(uuid())
-//   name                     String
-//   created_at               DateTime            @default(now())
-//   updated_at               DateTime            @updatedAt
-//   originally_issued_assets asset_information[] @relation("original_issue")
-//   currently_issued_assets  asset_information[] @relation("current_issue")
-// }
+  asset_information asset_information[]
+}
 
-// model location {
-//   id                String              @id @default(uuid())
-//   name              String
-//   long              String?
-//   lat               String?
-//   created_at        DateTime            @default(now())
-//   updated_at        DateTime            @updatedAt
-//   asset_information asset_information[]
-// }
+model conditions {
+  id String @id @default(uuid())
+  name String
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  asset_information asset_information[]
+}
+
+model legend {
+  id String @id @default(uuid())
+  name String
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  asset_information asset_information[]
+}

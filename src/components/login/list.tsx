@@ -52,11 +52,8 @@ export default function LoginList() {
 
         <div className="relative z-10 max-w-sm">
           <BrandLogo />
-          <p className="text-sm font-semibold uppercase tracking-[0.25em] text-violet-100">
-            B1G
-          </p>
-          <h1 className="mt-3 text-3xl font-bold leading-tight lg:text-4xl">
-            Welcome to B1G Asset Management
+          <h1 className="mt-3 text-3xl font-bold leading-tight">
+            B1G Asset Management
           </h1>
           <p className="mt-4 text-sm leading-relaxed text-violet-100 lg:text-base">
             Track, organize, and manage your organization&apos;s assets with
