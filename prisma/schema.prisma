@@ -23,6 +23,12 @@ model user {
 
   currently_issued_assets  asset_information[] @relation("current_issue")
   originally_issued_assets asset_information[] @relation("original_issue")
+  
+  created_assets asset_information[] @relation("created_by")
+  created_departments departments[] @relation("created_by")
+  created_locations locations[] @relation("created_by")
+  created_conditions conditions[] @relation("created_by")
+  created_legend legend[] @relation("created_by")
 }
 
 model asset_information {
@@ -41,6 +47,7 @@ model asset_information {
   useful_life_end_date DateTime?
   original_issue_date DateTime?
   currently_issued_to_id String?
+  created_by_id String?
 
   departments departments[]
   locations locations[]
@@ -49,40 +56,50 @@ model asset_information {
 
   currently_issued_to user? @relation("current_issue", fields: [currently_issued_to_id], references: [id])
   originally_issued_to user[]   @relation("original_issue")
+
+  created_by user? @relation("created_by", fields: [created_by_id], references: [id])
 }
 
 model departments {
   id String @id @default(uuid())
   name String
+  created_by_id String?
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
   asset_information asset_information[]
+  created_by user? @relation("created_by", fields: [created_by_id], references: [id])
 }
 
 model locations {
   id String @id @default(uuid())
   name String
+  created_by_id String?
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
   asset_information asset_information[]
+  created_by user? @relation("created_by", fields: [created_by_id], references: [id])
 }
 
 model conditions {
   id String @id @default(uuid())
   name String
+  created_by_id String?
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
   asset_information asset_information[]
+  created_by user? @relation("created_by", fields: [created_by_id], references: [id])
 }
 
 model legend {
   id String @id @default(uuid())
   name String
+  created_by_id String?
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
   asset_information asset_information[]
+  created_by user? @relation("created_by", fields: [created_by_id], references: [id])
 }

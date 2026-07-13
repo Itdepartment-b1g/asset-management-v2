@@ -15,7 +15,7 @@ function getPrismaClient() {
 
   // Recreate after schema changes — dev hot reload can keep an old client
   // without newly added model delegates (e.g. prisma.user).
-  if (cached && "user" in cached && "categories" in cached) {
+  if (cached && "user" in cached && "legend" in cached) {
     return cached;
   }
 
