@@ -19,6 +19,8 @@ type UpdateLegendBody = LegendBody & {
 };
 
 export const legend_controller = {
+
+  // List all legends
   async list_legends(request: Request) {
     const auth_user = await requireAuthUser();
 
@@ -73,6 +75,7 @@ export const legend_controller = {
     }
   },
 
+  // Find a legend by ID
   async get_legend_by_id(id: string) {
     const auth_user = await requireAuthUser();
 
@@ -117,6 +120,7 @@ export const legend_controller = {
     }
   },
 
+  // Create a new legend
   async create_legend(body: LegendBody) {
     const auth_user = await requireAuthUser();
 
@@ -163,6 +167,7 @@ export const legend_controller = {
     }
   },
 
+  // Update a legend
   async update_legend(body: UpdateLegendBody) {
     const auth_user = await requireAuthUser();
 
@@ -219,6 +224,7 @@ export const legend_controller = {
     }
   },
 
+  // Delete a legend
   async delete_legend(id: string) {
     const auth_user = await requireAuthUser();
 

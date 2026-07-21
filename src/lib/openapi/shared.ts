@@ -21,6 +21,10 @@ export const tags = [
     name: "legend",
     description: "Manage asset legends",
   },
+  {
+    name: "location",
+    description: "Manage asset locations",
+  },
 ];
 
 export const securitySchemes = {
