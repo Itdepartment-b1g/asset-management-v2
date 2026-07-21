@@ -5,7 +5,7 @@ export const legendPaths = {
       summary: "List legends or get one legend",
       description:
         "Returns a paginated list of legends when `id` is omitted. Pass `id` to fetch a single legend. Restricted to super_admin and admin.",
-      security: [{ sessionCookie: [] }],
+      security: [{ sessionCookie: [] }, { bearerAuth: [] }],
       parameters: [
         {
           name: "id",
@@ -87,7 +87,7 @@ export const legendPaths = {
       tags: ["legend"],
       summary: "Create a legend",
       description: "Creates a legend. Restricted to super_admin and admin.",
-      security: [{ sessionCookie: [] }],
+      security: [{ sessionCookie: [] }, { bearerAuth: [] }],
       requestBody: {
         required: true,
         content: {
@@ -144,7 +144,7 @@ export const legendPaths = {
       summary: "Update a legend",
       description:
         "Updates an existing legend's name and color. Restricted to super_admin and admin.",
-      security: [{ sessionCookie: [] }],
+      security: [{ sessionCookie: [] }, { bearerAuth: [] }],
       requestBody: {
         required: true,
         content: {
@@ -208,7 +208,7 @@ export const legendPaths = {
       tags: ["legend"],
       summary: "Delete a legend",
       description: "Deletes a legend by id. Restricted to super_admin and admin.",
-      security: [{ sessionCookie: [] }],
+      security: [{ sessionCookie: [] }, { bearerAuth: [] }],
       parameters: [
         {
           name: "id",

@@ -1,5 +1,6 @@
 import "server-only";
 
+import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { auth_repository } from "@/server/repositories/auth_repository";
@@ -11,11 +12,22 @@ export type SessionUser = {
   role: string | null;
 };
 
+// Resolve the user from an `Authorization: Bearer <token>` header or,
+// when absent, from the Supabase session cookie.
 export async function getSessionUser(): Promise<SessionUser | null> {
   const supabase = await createClient();
+
+  const header_store = await headers();
+  const authorization = header_store.get("authorization");
+  const bearer_token = authorization?.startsWith("Bearer ")
+    ? authorization.slice("Bearer ".length).trim()
+    : null;
+
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = bearer_token
+    ? await supabase.auth.getUser(bearer_token)
+    : await supabase.auth.getUser();
 
   if (!user) {
     return null;

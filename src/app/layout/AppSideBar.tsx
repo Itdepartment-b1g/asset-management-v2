@@ -26,7 +26,7 @@ function is_active_path(pathname: string, href: string) {
 
 function BrandLogo() {
   return (
-    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-800">
+    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-600">
       <InventoryIcon className="h-5 w-5 text-white" />
     </div>
   );
@@ -49,7 +49,7 @@ export default function AppSideBar({
             <h1 className="truncate text-base font-bold text-zinc-900">
               Asset Management
             </h1>
-            <p className="text-xs font-semibold uppercase tracking-wide text-violet-800">
+            <p className="text-xs font-semibold uppercase tracking-wide text-violet-500">
               {format_role_label(role)}
             </p>
           </div>
@@ -95,7 +95,7 @@ export default function AppSideBar({
           </p>
         ) : null}
         {user_email ? (
-          <p className="mt-0.5 truncate text-xs text-violet-800">{user_email}</p>
+          <p className="mt-0.5 truncate text-xs text-violet-500">{user_email}</p>
         ) : null}
         <div className="mt-4">
           <LogoutButton variant="sidebar" />

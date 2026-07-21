@@ -104,7 +104,7 @@ export const auth_controller = {
         return NextResponse.json({ error: error.message }, { status: 401 });
       }
 
-      if (!data.user) {
+      if (!data.user || !data.session) {
         return NextResponse.json(
           { error: "Invalid credentials" },
           { status: 401 },
@@ -116,7 +116,10 @@ export const auth_controller = {
         email: data.user.email,
       });
 
-      return NextResponse.json(to_user_response(profile));
+      return NextResponse.json({
+        ...to_user_response(profile),
+        access_token: data.session.access_token,
+      });
     } catch (error) {
       return handle_repository_error(error);
     }

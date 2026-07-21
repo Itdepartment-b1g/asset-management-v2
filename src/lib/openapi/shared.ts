@@ -31,6 +31,13 @@ export const securitySchemes = {
     description:
       "Supabase Auth session cookie returned by `POST /api/auth/login`. In Swagger UI, sign in first so the browser stores the cookie for this origin.",
   },
+  bearerAuth: {
+    type: "http",
+    scheme: "bearer",
+    bearerFormat: "JWT",
+    description:
+      "Supabase access token returned by `POST /api/auth/login` (`access_token`). In Swagger UI, click Authorize and paste the token.",
+  },
 };
 
 export const sharedSchemas = {
