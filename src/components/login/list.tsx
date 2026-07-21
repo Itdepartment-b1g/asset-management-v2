@@ -3,7 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { AuthForm } from "@/components/auth/auth-form";
 import { get_dashboard_path } from "@/lib/auth/dashboard";
-import { loginUser } from "@/lib/store/auth";
+import { loginUser } from "@/lib/store/slices/auth-slices";
 import { useAppDispatch } from "@/lib/store/hooks";
 
 function BrandLogo() {

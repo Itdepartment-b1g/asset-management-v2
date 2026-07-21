@@ -1,7 +1,7 @@
 import { configureStore } from "@reduxjs/toolkit";
-import authReducer from "@/lib/store/auth";
-import legendsReducer from "@/lib/store/legend-slice";
-import locationsReducer from "@/lib/store/location-slice";
+import authReducer from "@/lib/store/slices/auth-slices";
+import legendsReducer from "@/lib/store/slices/legend-slice";
+import locationsReducer from "@/lib/store/slices/location-slice";
 
 export const store = configureStore({
   reducer: {
