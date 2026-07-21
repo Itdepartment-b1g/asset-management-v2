@@ -17,6 +17,10 @@ export const tags = [
     name: "auth",
     description: "Sign in and manage user profiles",
   },
+  {
+    name: "legend",
+    description: "Manage asset legends",
+  },
 ];
 
 export const securitySchemes = {

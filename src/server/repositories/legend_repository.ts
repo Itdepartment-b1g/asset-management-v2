@@ -48,6 +48,15 @@ function validate_name(name: string) {
   return trimmed;
 }
 
+function validate_color(color: string) {
+  const trimmed = color.trim();
+
+  if (!trimmed) {
+    throw new ValidationError("color is required");
+  }
+
+  return trimmed;
+}
 export const legend_repository = {
   async list_legends(actor_id: string, input?: PaginationInput) {
     await assert_privileged_actor(actor_id);
@@ -83,18 +92,19 @@ export const legend_repository = {
     return legend;
   },
 
-  async create_legend(actor_id: string, name: string) {
+  async create_legend(actor_id: string, name: string, color: string) {
     await assert_privileged_actor(actor_id);
 
     return prisma.legend.create({
       data: {
         name: validate_name(name),
+        color: validate_color(color),
         created_by_id: actor_id,
       },
     });
   },
 
-  async update_legend(actor_id: string, id: string, name: string) {
+  async update_legend(actor_id: string, id: string, name: string, color: string) {
     await assert_privileged_actor(actor_id);
 
     const legend_id = id.trim();
@@ -113,7 +123,10 @@ export const legend_repository = {
 
     return prisma.legend.update({
       where: { id: legend_id },
-      data: { name: validate_name(name) },
+      data: {
+         name: validate_name(name),
+          color: validate_color(color),
+        },
     });
   },
 

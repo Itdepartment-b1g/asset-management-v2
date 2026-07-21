@@ -57,7 +57,7 @@ export default function AppSideBar({
       </div>
 
       <nav className="flex flex-1 flex-col overflow-y-auto px-4 py-5">
-        <p className="mb-3 px-2 text-xs font-medium text-zinc-400">Menu</p>
+        {/* <p className="mb-3 px-2 text-xs font-medium text-zinc-400">Menu</p> */}
         <div className="flex flex-col gap-1">
           {menu_items.map((item) => {
             const active = is_active_path(pathname, item.href);

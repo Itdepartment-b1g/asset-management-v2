@@ -96,6 +96,7 @@ model conditions {
 model legend {
   id String @id @default(uuid())
   name String
+  color String
   created_by_id String?
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt

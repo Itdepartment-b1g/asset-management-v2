@@ -1,4 +1,5 @@
 import { authPaths, authSchemas } from "./auth";
+import { legendPaths, legendSchemas } from "./legend";
 import { info, securitySchemes, servers, sharedSchemas, tags } from "./shared";
 
 export const openApiDocument = {
@@ -8,11 +9,13 @@ export const openApiDocument = {
   tags,
   paths: {
     ...authPaths,
+    ...legendPaths,
   },
   components: {
     securitySchemes,
     schemas: {
       ...authSchemas,
+      ...legendSchemas,
       ...sharedSchemas,
     },
   },

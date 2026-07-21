@@ -41,3 +41,6 @@ yarn-error.log*
 next-env.d.ts
 
 /src/generated/prisma
+
+# local component visual playground
+/src/app/component-visual
