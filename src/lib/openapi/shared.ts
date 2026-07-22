@@ -17,6 +17,14 @@ export const tags = [
     name: "auth",
     description: "Sign in and manage user profiles",
   },
+  {
+    name: "legend",
+    description: "Manage asset legends",
+  },
+  {
+    name: "location",
+    description: "Manage asset locations",
+  },
 ];
 
 export const securitySchemes = {
@@ -26,6 +34,13 @@ export const securitySchemes = {
     name: "Cookie",
     description:
       "Supabase Auth session cookie returned by `POST /api/auth/login`. In Swagger UI, sign in first so the browser stores the cookie for this origin.",
+  },
+  bearerAuth: {
+    type: "http",
+    scheme: "bearer",
+    bearerFormat: "JWT",
+    description:
+      "Supabase access token returned by `POST /api/auth/login` (`access_token`). In Swagger UI, click Authorize and paste the token.",
   },
 };
 

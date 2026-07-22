@@ -69,7 +69,7 @@ export const authPaths = {
           description: "Signed in",
           content: {
             "application/json": {
-              schema: { $ref: "#/components/schemas/User" },
+              schema: { $ref: "#/components/schemas/LoginResponse" },
             },
           },
         },
@@ -114,7 +114,7 @@ export const authPaths = {
       summary: "Create a user",
       description:
         "Creates a Supabase auth user and matching profile. super_admin can create super_admin, admin, or employee. admin can create employee only.",
-      security: [{ sessionCookie: [] }],
+      security: [{ sessionCookie: [] }, { bearerAuth: [] }],
       requestBody: {
         required: true,
         content: {
@@ -173,7 +173,7 @@ export const authPaths = {
       summary: "List users or get one user",
       description:
         "Returns a paginated list of users when `id` is omitted. Pass `id` to fetch a single user. super_admin can access all users. admin can only access employees.",
-      security: [{ sessionCookie: [] }],
+      security: [{ sessionCookie: [] }, { bearerAuth: [] }],
       parameters: [
         {
           name: "id",
@@ -260,7 +260,7 @@ export const authPaths = {
       summary: "Update a user profile",
       description:
         "Updates an existing profile. Omit `id` to update the signed-in user (full_name, password). super_admin can pass `id` to update another user's email, full_name, role, or password.",
-      security: [{ sessionCookie: [] }],
+      security: [{ sessionCookie: [] }, { bearerAuth: [] }],
       requestBody: {
         required: true,
         content: {
@@ -288,6 +288,21 @@ export const authSchemas = {
       },
     },
     required: ["id", "email", "full_name", "role"],
+  },
+  LoginResponse: {
+    allOf: [
+      { $ref: "#/components/schemas/User" },
+      {
+        type: "object",
+        properties: {
+          access_token: {
+            type: "string",
+            description: "Supabase JWT for `Authorization: Bearer` requests.",
+          },
+        },
+        required: ["access_token"],
+      },
+    ],
   },
   LoginBody: {
     type: "object",

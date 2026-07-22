@@ -43,7 +43,7 @@ export function AuthForm({ onSubmit, variant = "default" }: AuthFormProps) {
           disabled={isSubmitting}
           required
           autoComplete="email"
-          className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500 disabled:opacity-50"
+          className="rounded-lg border border-zinc-300 bg-violet-100 px-4 py-3.5 text-sm outline-none focus:border-zinc-500 disabled:opacity-50"
           placeholder="you@example.com"
         />
       </label>
@@ -58,7 +58,7 @@ export function AuthForm({ onSubmit, variant = "default" }: AuthFormProps) {
           required
           minLength={6}
           autoComplete="current-password"
-          className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500 disabled:opacity-50"
+          className="rounded-lg border border-zinc-300 bg-violet-100 px-4 py-3.5 text-sm outline-none focus:border-zinc-500 disabled:opacity-50"
           placeholder="At least 6 characters"
         />
       </label>
@@ -68,7 +68,7 @@ export function AuthForm({ onSubmit, variant = "default" }: AuthFormProps) {
       <button
         type="submit"
         disabled={isSubmitting}
-        className="rounded-md bg-zinc-900 px-4 py-2 text-sm text-white hover:bg-violet-800 disabled:opacity-50"
+        className="rounded-lg bg-violet-600 px-5 py-3.5 text-sm font-medium text-white hover:bg-violet-800 disabled:opacity-50"
       >
         {isSubmitting ? "Please wait..." : "Sign in"}
       </button>
