@@ -267,14 +267,11 @@ export default function LocationPanel() {
 
   return (
     <section>
-      <div className="mb-4">
-        <h2 className="text-lg font-semibold text-zinc-900">Locations</h2>
-        <p className="mt-1 text-sm text-zinc-600">
-          Locations where assets are stored or tracked.
-        </p>
-      </div>
+      {/* <p className="mb-3 text-sm text-zinc-600">
+        Locations where assets are stored or tracked.
+      </p> */}
 
-      <div className="mb-4 rounded-xl border border-zinc-200 bg-white p-4">
+      <div className="mb-3 rounded-xl border border-zinc-200 bg-white p-4">
         <form
           className="flex flex-col gap-3 sm:flex-row sm:items-end"
           onSubmit={(e) => {
@@ -303,20 +300,22 @@ export default function LocationPanel() {
         </form>
       </div>
 
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <AsyncStatus
-          loading={loading}
-          error={error}
-          success={success}
-          loadingMessage="Loading locations..."
-        />
-      </div>
+      {loading || error || success ? (
+        <div className="mb-3">
+          <AsyncStatus
+            loading={loading}
+            error={error}
+            success={success}
+            loadingMessage="Loading locations..."
+          />
+        </div>
+      ) : null}
 
       <TableView
         columns={columns}
         rows={items}
         rowKey={(row) => row.id}
-        emptyMessage="No locations yet. Add one above."
+        emptyMessage="No locations yet—use the form above to add one."
         isAccordion={false}
       />
 

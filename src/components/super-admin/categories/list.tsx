@@ -10,6 +10,8 @@ import { useState } from "react";
 
 import Tabs from "@/components/common/tabs";
 
+import ComingSoonPanel from "@/components/common/coming-soon-panel";
+import CategoryStats from "./card-views/category-stats";
 import LegendPanel from "./modules/legend-panel";
 import LocationPanel from "./modules/location-panel";
 
@@ -25,6 +27,8 @@ export default function SuperAdminCategoriesList() {
         </p>
       </header>
 
+      <CategoryStats activeTab={tab} />
+
       <Tabs
         value={tab}
         onChange={setTab}
@@ -32,29 +36,37 @@ export default function SuperAdminCategoriesList() {
           {
             id: "location",
             label: "Location",
-            icon: <MapPin aria-hidden className="h-4 w-4 text-violet-700" />,
+            icon: <MapPin aria-hidden className="h-4 w-4" />,
             content: <LocationPanel />,
           },
           {
             id: "department",
             label: "Departments",
-            icon: (
-              <Building2 aria-hidden className="h-4 w-4 text-violet-700" />
+            icon: <Building2 aria-hidden className="h-4 w-4" />,
+            content: (
+              <ComingSoonPanel
+                icon={<Building2 aria-hidden className="h-5 w-5" />}
+                title="Departments coming soon"
+                description="Department lookup values will live here so you can organize assets by team."
+              />
             ),
-            content: null,
           },
           {
             id: "condition",
             label: "Conditions",
-            icon: (
-              <ClipboardCheck aria-hidden className="h-4 w-4 text-violet-700" />
+            icon: <ClipboardCheck aria-hidden className="h-4 w-4" />,
+            content: (
+              <ComingSoonPanel
+                icon={<ClipboardCheck aria-hidden className="h-5 w-5" />}
+                title="Conditions coming soon"
+                description="Condition lookup values will live here for tracking asset wear and status."
+              />
             ),
-            content: null,
           },
           {
             id: "legend",
             label: "Legend",
-            icon: <Palette aria-hidden className="h-4 w-4 text-violet-700" />,
+            icon: <Palette aria-hidden className="h-4 w-4" />,
             content: <LegendPanel />,
           },
         ]}

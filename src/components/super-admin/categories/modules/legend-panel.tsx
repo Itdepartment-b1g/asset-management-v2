@@ -189,14 +189,11 @@ export default function LegendPanel() {
 
   return (
     <section>
-      <div className="mb-4">
-        <h2 className="text-lg font-semibold text-zinc-900">Legend</h2>
-        <p className="mt-1 text-sm text-zinc-600">
-          Map a human-readable label to a color used in the asset UI.
-        </p>
-      </div>
+      {/* <p className="mb-3 text-sm text-zinc-600">
+        Map a human-readable label to a color used in the asset UI.
+      </p> */}
 
-      <div className="mb-4 rounded-xl border border-zinc-200 bg-white p-4">
+      <div className="mb-3 rounded-xl border border-zinc-200 bg-white p-4">
         <form
           className="flex flex-col gap-3 sm:flex-row sm:items-end"
           onSubmit={(e) => {
@@ -212,7 +209,7 @@ export default function LegendPanel() {
               disabled={loading}
               required
               className="rounded-lg border border-zinc-300 bg-violet-50 px-4 py-2.5 text-sm outline-none focus:border-violet-600 disabled:opacity-50"
-              placeholder="e.g. In Use"
+              placeholder="eg. ELECTRONICS"
             />
           </label>
 
@@ -252,20 +249,22 @@ export default function LegendPanel() {
         </form>
       </div>
 
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <AsyncStatus
-          loading={loading}
-          error={error}
-          success={success}
-          loadingMessage="Loading legends..."
-        />
-      </div>
+      {loading || error || success ? (
+        <div className="mb-3">
+          <AsyncStatus
+            loading={loading}
+            error={error}
+            success={success}
+            loadingMessage="Loading legends..."
+          />
+        </div>
+      ) : null}
 
       <TableView
         columns={columns}
         rows={items}
         rowKey={(row) => row.id}
-        emptyMessage="No legends yet. Add one above."
+        emptyMessage="No legends yet—use the form above to add one."
         isAccordion={false}
       />
 

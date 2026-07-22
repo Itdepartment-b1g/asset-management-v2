@@ -3,7 +3,7 @@
 import { Edit3, Trash2 } from "lucide-react";
 
 import type { TableColumn } from "@/components/common/table-view";
-import { formatDate } from "@/lib/format-date";
+import { formatDateTime } from "@/lib/format-date";
 
 export type LegendItem = {
   id: string;
@@ -47,7 +47,7 @@ export function LegendTableView(
       header: "Created",
       sortValue: (row) => new Date(row.created_at).getTime(),
       render: (row) => (
-        <span className="text-zinc-600">{formatDate(row.created_at)}</span>
+        <span className="text-zinc-600">{formatDateTime(row.created_at)}</span>
       ),
     },
     {
