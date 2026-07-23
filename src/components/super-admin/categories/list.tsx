@@ -19,7 +19,7 @@ export default function SuperAdminCategoriesList() {
   const [tab, setTab] = useState<string>("location");
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div className="w-full">
       <header className="mb-6">
         <h1 className="text-2xl font-semibold text-zinc-900">Categories</h1>
         <p className="mt-1 text-sm text-zinc-600">
