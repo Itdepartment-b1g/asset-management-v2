@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { LogoutIcon } from "@/app/layout/sidebar-icons";
 import { createClient } from "@/lib/supabase/client";
-import { clearAuthUser } from "@/lib/store/auth";
+import { clearAuthUser } from "@/lib/store/slices/auth-slices";
 import { useAppDispatch } from "@/lib/store/hooks";
 
 type LogoutButtonProps = {

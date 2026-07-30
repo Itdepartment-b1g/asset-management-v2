@@ -20,34 +20,34 @@ export const employee_menu_items: SideBarMenuItem[] = [
 
 export const super_admin_menu_items: SideBarMenuItem[] = [
   { label: "Dashboard", href: "/super-admin", icon: DashboardIcon },
-  {
-    label: "Inventory",
-    href: "/super-admin/inventory",
-    icon: InventoryIcon,
-    showChevron: true,
-  },
+  // {
+  //   label: "Inventory",
+  //   href: "/super-admin/inventory",
+  //   icon: InventoryIcon,
+  //   showChevron: true,
+  // },
   {
     label: "Categories",
     href: "/super-admin/categories",
     icon: CategoriesIcon,
-    showChevron: true,
+    showChevron: false,
   },
   {
     label: "Settings",
     href: "/super-admin/settings",
     icon: SettingsIcon,
-    showChevron: true,
+    showChevron: false,
   },
 ];
 
 export const admin_menu_items: SideBarMenuItem[] = [
   { label: "Dashboard", href: "/admin", icon: DashboardIcon },
-  {
-    label: "Inventory",
-    href: "/admin/inventory",
-    icon: InventoryIcon,
-    showChevron: true,
-  },
+  // {
+  //   label: "Inventory",
+  //   href: "/admin/inventory",
+  //   icon: InventoryIcon,
+  //   showChevron: true,
+  // },
   {
     label: "Categories",
     href: "/admin/categories",

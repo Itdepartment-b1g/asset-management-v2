@@ -48,8 +48,8 @@ export default function Tabs({
               onClick={() => onChange(item.id)}
               className={`flex shrink-0 items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
                 isActive
-                  ? "bg-white text-zinc-900 shadow-sm"
-                  : "text-zinc-500 hover:text-zinc-800"
+                  ? "bg-white text-zinc-900 shadow-sm [&_svg]:text-violet-700"
+                  : "text-zinc-500 hover:text-zinc-800 [&_svg]:text-zinc-400 hover:[&_svg]:text-zinc-600"
               }`}
             >
               {item.icon}
@@ -63,7 +63,7 @@ export default function Tabs({
         id={`panel-${activeItem.id}`}
         role="tabpanel"
         aria-labelledby={`tab-${activeItem.id}`}
-        className="mt-8"
+        className="mt-5"
       >
         {activeItem.content}
       </div>
