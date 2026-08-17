@@ -1,7 +1,10 @@
 import { authPaths, authSchemas } from "./auth";
 import { legendPaths, legendSchemas } from "./legend";
 import { locationPaths, locationSchemas } from "./location";
+import { departmentPaths, departmentSchemas } from "./department";
+import { conditionPaths, conditionSchemas } from "./condition";
 import { info, securitySchemes, servers, sharedSchemas, tags } from "./shared";
+
 
 export const openApiDocument = {
   openapi: "3.0.3",
@@ -12,6 +15,8 @@ export const openApiDocument = {
     ...authPaths,
     ...legendPaths,
     ...locationPaths,
+    ...departmentPaths,
+    ...conditionPaths,
   },
   components: {
     securitySchemes,
@@ -19,6 +24,8 @@ export const openApiDocument = {
       ...authSchemas,
       ...legendSchemas,
       ...locationSchemas,
+      ...departmentSchemas,
+      ...conditionSchemas,
       ...sharedSchemas,
     },
   },

@@ -25,6 +25,14 @@ export const tags = [
     name: "location",
     description: "Manage asset locations",
   },
+  {
+    name: "department",
+    description: "Manage asset departments",
+  },
+  {
+    name: "condition",
+    description: "Manage asset conditions",
+  },
 ];
 
 export const securitySchemes = {

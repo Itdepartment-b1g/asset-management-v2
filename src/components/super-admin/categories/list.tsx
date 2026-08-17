@@ -14,6 +14,8 @@ import ComingSoonPanel from "@/components/common/coming-soon-panel";
 import CategoryStats from "./card-views/category-stats";
 import LegendPanel from "./modules/legend-panel";
 import LocationPanel from "./modules/location-panel";
+import DepartmentPanel from "./modules/department-panel";
+import ConditionPanel from "./modules/condition-panel";
 
 export default function SuperAdminCategoriesList() {
   const [tab, setTab] = useState<string>("location");
@@ -43,24 +45,14 @@ export default function SuperAdminCategoriesList() {
             id: "department",
             label: "Departments",
             icon: <Building2 aria-hidden className="h-4 w-4" />,
-            content: (
-              <ComingSoonPanel
-                icon={<Building2 aria-hidden className="h-5 w-5" />}
-                title="Departments coming soon"
-                description="Department lookup values will live here so you can organize assets by team."
-              />
-            ),
+            content: <DepartmentPanel />,
           },
           {
             id: "condition",
             label: "Conditions",
             icon: <ClipboardCheck aria-hidden className="h-4 w-4" />,
             content: (
-              <ComingSoonPanel
-                icon={<ClipboardCheck aria-hidden className="h-5 w-5" />}
-                title="Conditions coming soon"
-                description="Condition lookup values will live here for tracking asset wear and status."
-              />
+              <ConditionPanel />
             ),
           },
           {

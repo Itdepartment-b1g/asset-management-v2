@@ -31,20 +31,22 @@ const STATS: StatConfig[] = [
     id: "department",
     label: "Departments",
     icon: Building2,
-    available: false,
+    available: true,
   },
   {
     id: "condition",
     label: "Conditions",
     icon: ClipboardCheck,
-    available: false,
+    available: true,
   },
   { id: "legend", label: "Legend", icon: Palette, available: true },
 ];
 
 type Totals = {
   location: number | null;
+  department: number | null;
   legend: number | null;
+  condition: number | null;
 };
 
 async function fetchTotal(endpoint: string): Promise<number> {
@@ -66,27 +68,39 @@ async function fetchTotal(endpoint: string): Promise<number> {
 export default function CategoryStats({ activeTab }: CategoryStatsProps) {
   const [totals, setTotals] = useState<Totals>({
     location: null,
+    department: null,
+    condition: null,
     legend: null,
   });
   const [initialLoading, setInitialLoading] = useState(true);
-  const baselineRef = useRef<Totals>({ location: null, legend: null });
+  const baselineRef = useRef<Totals>({
+    location: null,
+    department: null,
+    condition: null,
+    legend: null,
+  });
 
   const loadTotals = useCallback(async () => {
     try {
-      const [location, legend] = await Promise.all([
+      const [location, department, legend, condition] = await Promise.all([
         fetchTotal("/api/location"),
+        fetchTotal("/api/department"),
         fetchTotal("/api/legend"),
-      ]);
-      setTotals({ location, legend });
+        fetchTotal("/api/condition"),
+        ]);
+      setTotals({ location, department, legend, condition });
 
       if (baselineRef.current.location === null) {
-        baselineRef.current = { location, legend };
+        baselineRef.current = { location, department, legend, condition };
       }
     } catch {
       setTotals((current) =>
-        current.location === null && current.legend === null
-          ? { location: null, legend: null }
-          : current,
+        current.location === null &&
+          current.department === null &&
+          current.legend === null &&
+          current.condition === null
+          ? { location: null, department: null, legend: null, condition: current.condition }
+          : { location: null, department: null, legend: null, condition: current.condition },
       );
     } finally {
       setInitialLoading(false);
@@ -112,9 +126,13 @@ export default function CategoryStats({ activeTab }: CategoryStatsProps) {
     const total =
       stat.id === "location"
         ? totals.location
-        : stat.id === "legend"
-          ? totals.legend
-          : null;
+        : stat.id === "department"
+          ? totals.department
+          : stat.id === "legend"
+            ? totals.legend
+            : stat.id === "condition"
+              ? totals.condition
+            : null;
 
     if (initialLoading && total === null) return "…";
     return total === null ? "—" : String(total);
@@ -126,15 +144,23 @@ export default function CategoryStats({ activeTab }: CategoryStatsProps) {
     const total =
       stat.id === "location"
         ? totals.location
-        : stat.id === "legend"
-          ? totals.legend
-          : null;
+        : stat.id === "department"
+          ? totals.department
+          : stat.id === "legend"
+            ? totals.legend
+            : stat.id === "condition"
+              ? totals.condition
+            : null;
     const baseline =
       stat.id === "location"
         ? baselineRef.current.location
-        : stat.id === "legend"
-          ? baselineRef.current.legend
-          : null;
+        : stat.id === "department"
+          ? baselineRef.current.department
+          : stat.id === "legend"
+            ? baselineRef.current.legend
+            : stat.id === "condition"
+              ? baselineRef.current.condition
+            : null;
 
     if (total === null || baseline === null) return 0;
     return total - baseline;
