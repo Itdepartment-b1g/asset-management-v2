@@ -1,11 +1,6 @@
 import type { ComponentType } from "react";
+import { LayoutDashboard, Settings, Tags, Users } from "lucide-react";
 import type { DashboardRole } from "@/lib/auth/dashboard";
-import {
-  CategoriesIcon,
-  DashboardIcon,
-  InventoryIcon,
-  SettingsIcon,
-} from "@/app/layout/sidebar-icons";
 
 export type SideBarMenuItem = {
   label: string;
@@ -15,49 +10,55 @@ export type SideBarMenuItem = {
 };
 
 export const employee_menu_items: SideBarMenuItem[] = [
-  { label: "Dashboard", href: "/employee", icon: DashboardIcon },
+  { label: "Dashboard", href: "/employee", icon: LayoutDashboard },
 ];
 
 export const super_admin_menu_items: SideBarMenuItem[] = [
-  { label: "Dashboard", href: "/super-admin", icon: DashboardIcon },
+  { label: "Dashboard", href: "/super-admin", icon: LayoutDashboard },
   // {
   //   label: "Inventory",
   //   href: "/super-admin/inventory",
-  //   icon: InventoryIcon,
+  //   icon: Package,
   //   showChevron: true,
   // },
   {
+    label: "Users",
+    href: "/super-admin/users",
+    icon: Users,
+    showChevron: false,
+  },
+  {
     label: "Categories",
     href: "/super-admin/categories",
-    icon: CategoriesIcon,
+    icon: Tags,
     showChevron: false,
   },
   {
     label: "Settings",
     href: "/super-admin/settings",
-    icon: SettingsIcon,
+    icon: Settings,
     showChevron: false,
   },
 ];
 
 export const admin_menu_items: SideBarMenuItem[] = [
-  { label: "Dashboard", href: "/admin", icon: DashboardIcon },
+  { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
   // {
   //   label: "Inventory",
   //   href: "/admin/inventory",
-  //   icon: InventoryIcon,
+  //   icon: Package,
   //   showChevron: true,
   // },
   {
     label: "Categories",
     href: "/admin/categories",
-    icon: CategoriesIcon,
+    icon: Tags,
     showChevron: true,
   },
   {
     label: "Settings",
     href: "/admin/settings",
-    icon: SettingsIcon,
+    icon: Settings,
     showChevron: true,
   },
 ];

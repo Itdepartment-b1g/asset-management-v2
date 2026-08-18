@@ -7,6 +7,7 @@ import { AsyncStatus } from "@/components/common/async-status";
 import Pagination, {
   type PaginationMeta,
 } from "@/components/common/pagination";
+import SearchInput from "@/components/common/search-input";
 import TableView from "@/components/common/table-view";
 
 import DeleteLegendDialog from "../dialogs/delete-legend-dialog";
@@ -55,13 +56,16 @@ export default function LegendPanel() {
   const [addColor, setAddColor] = useState("#6d28d9");
   const [editing, setEditing] = useState<LegendItem | null>(null);
   const [deleting, setDeleting] = useState<LegendItem | null>(null);
+  const [searchInput, setSearchInput] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
 
   async function loadPage(
     pageToLoad: number,
-    opts?: { manageLoading?: boolean; limit?: number },
+    opts?: { manageLoading?: boolean; limit?: number; search?: string },
   ) {
     const manageLoading = opts?.manageLoading ?? true;
     const limitToUse = opts?.limit ?? limit;
+    const searchToUse = opts?.search ?? searchQuery;
 
     if (manageLoading) {
       setLoading(true);
@@ -70,7 +74,7 @@ export default function LegendPanel() {
     }
 
     try {
-      const cacheKey = `/api/legend|page=${pageToLoad}|limit=${limitToUse}`;
+      const cacheKey = `/api/legend|page=${pageToLoad}|limit=${limitToUse}|search=${searchToUse}`;
       const cached = legendPageCache.get(cacheKey);
       if (cached) {
         setItems(cached.data);
@@ -82,6 +86,9 @@ export default function LegendPanel() {
       const params = new URLSearchParams();
       params.set("page", String(pageToLoad));
       params.set("limit", String(limitToUse));
+      if (searchToUse) {
+        params.set("search", searchToUse);
+      }
 
       const response = await fetch(`/api/legend?${params.toString()}`, {
         ...fetchOptions,
@@ -101,15 +108,21 @@ export default function LegendPanel() {
   }
 
   useEffect(() => {
+    const nextSearch = searchInput.trim();
+    const delay = nextSearch === searchQuery ? 0 : 150;
     const t = window.setTimeout(() => {
-      void loadPage(1);
-    }, 0);
+      setSearchQuery(nextSearch);
+      void loadPage(1, {
+        search: nextSearch,
+        manageLoading: nextSearch === searchQuery,
+      });
+    }, delay);
 
     return () => {
       window.clearTimeout(t);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- initial load only
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- search-driven reload
+  }, [searchInput]);
 
   const columns = LegendTableView(
     loading,
@@ -133,6 +146,7 @@ export default function LegendPanel() {
         body: JSON.stringify({ name, color }),
       });
       await parseResponse<LegendItem>(response);
+      legendPageCache.clear();
       await loadPage(page, { manageLoading: false });
       setSuccess(`Added ${name}`);
       setAddName("");
@@ -159,6 +173,7 @@ export default function LegendPanel() {
         body: JSON.stringify({ id, name: nextName, color: nextColor }),
       });
       await parseResponse<LegendItem>(response);
+      legendPageCache.clear();
       await loadPage(page, { manageLoading: false });
       setSuccess(`Updated ${nextName}`);
     } catch (e) {
@@ -178,6 +193,7 @@ export default function LegendPanel() {
         method: "DELETE",
       });
       await parseResponse<LegendItem>(response);
+      legendPageCache.clear();
       await loadPage(page, { manageLoading: false });
       setSuccess("Deleted");
     } catch (e) {
@@ -249,6 +265,15 @@ export default function LegendPanel() {
         </form>
       </div>
 
+      <div className="mb-3">
+        <SearchInput
+          value={searchInput}
+          onChange={setSearchInput}
+          placeholder="Search legends"
+          className="w-full sm:max-w-md"
+        />
+      </div>
+
       {loading || error || success ? (
         <div className="mb-3">
           <AsyncStatus
@@ -264,7 +289,11 @@ export default function LegendPanel() {
         columns={columns}
         rows={items}
         rowKey={(row) => row.id}
-        emptyMessage="No legends yet—use the form above to add one."
+        emptyMessage={
+          searchQuery
+            ? "No legends match your search."
+            : "No legends yet—use the form above to add one."
+        }
         isAccordion={false}
       />
 

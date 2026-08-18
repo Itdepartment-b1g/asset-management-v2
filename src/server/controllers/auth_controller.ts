@@ -14,11 +14,17 @@ import { requireAuthUser } from "@/server/auth/session";
 
 type LoginBody = { email?: string; password?: string };
 
+type UserDepartment = {
+  id: string;
+  name: string;
+} | null;
+
 type CreateUserBody = {
   email?: string;
   password?: string;
   full_name?: string | null;
   role?: string | null;
+  department_id?: string | null;
 };
 
 type UpdateUserBody = {
@@ -26,8 +32,15 @@ type UpdateUserBody = {
   email?: string | null;
   full_name?: string | null;
   role?: string | null;
+  department_id?: string | null;
   password?: string;
 };
+
+type UserCreatedBy = {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+} | null;
 
 // Shape a Prisma user row into the JSON returned by auth API routes.
 function to_user_response(user: {
@@ -35,12 +48,20 @@ function to_user_response(user: {
   email: string | null;
   full_name: string | null;
   role?: string | null;
+  department_id?: string | null;
+  department?: UserDepartment;
+  created_by_id?: string | null;
+  created_by?: UserCreatedBy;
 }) {
   return {
     id: user.id,
     email: user.email,
     full_name: user.full_name,
     role: user.role ?? null,
+    department_id: user.department_id ?? null,
+    department: user.department ?? null,
+    created_by_id: user.created_by_id ?? null,
+    created_by: user.created_by ?? null,
   };
 }
 
@@ -137,6 +158,7 @@ export const auth_controller = {
     const password = body.password;
     const full_name = body.full_name?.trim() || null;
     const role = body.role;
+    const department_id = body.department_id?.trim() || null;
 
     if (!email) {
       return NextResponse.json({ error: "email is required" }, { status: 400 });
@@ -151,6 +173,13 @@ export const auth_controller = {
 
     if (!role) {
       return NextResponse.json({ error: "role is required" }, { status: 400 });
+    }
+
+    if (!department_id) {
+      return NextResponse.json(
+        { error: "department is required" },
+        { status: 400 },
+      );
     }
 
     try {
@@ -179,6 +208,7 @@ export const auth_controller = {
         email,
         full_name,
         role,
+        department_id,
       });
 
       return NextResponse.json(to_user_response(profile), { status: 201 });
@@ -201,6 +231,7 @@ export const auth_controller = {
       !body.email &&
       !body.full_name &&
       body.role === undefined &&
+      body.department_id === undefined &&
       !body.password
     ) {
       return NextResponse.json(
@@ -216,6 +247,7 @@ export const auth_controller = {
         email: body.email,
         full_name: body.full_name,
         role: body.role,
+        department_id: body.department_id,
         password: body.password,
       });
 
@@ -244,6 +276,9 @@ export const auth_controller = {
     const page = searchParams.get("page");
     const limit = searchParams.get("limit");
     const role_param = searchParams.get("role") ?? undefined;
+    const search = searchParams.get("search")?.trim() || undefined;
+    const department_id =
+      searchParams.get("department_id")?.trim() || undefined;
 
     const role = auth_user.role === "admin" ? "employee" : role_param;
 
@@ -252,6 +287,8 @@ export const auth_controller = {
         page: page ? Number(page) : undefined,
         limit: limit ? Number(limit) : undefined,
         role,
+        search,
+        department_id,
       });
 
       return NextResponse.json({
@@ -285,7 +322,7 @@ export const auth_controller = {
     }
 
     try {
-      const user = await auth_repository.find_by_id(target_id);
+      const user = await auth_repository.find_by_id_with_relations(target_id);
 
       if (!user) {
         return NextResponse.json({ error: "User not found" }, { status: 404 });

@@ -30,6 +30,7 @@ export const locations_controller = {
         const {searchParams} = new URL(request.url)
         const page_param = searchParams.get("page");
         const limit_param = searchParams.get("limit");
+        const search = searchParams.get("search")?.trim() || undefined;
         const page = page_param === null ? undefined : Number(page_param);
         const limit = limit_param === null ? undefined : Number(limit_param);
 
@@ -51,6 +52,7 @@ export const locations_controller = {
             const result = await locations_repository.list_locations(auth_user.id, {
                 page,
                 limit,
+                search,
             });
 
             return NextResponse.json(result);

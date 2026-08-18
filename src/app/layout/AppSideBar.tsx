@@ -8,7 +8,7 @@ import {
   format_role_label,
   get_side_bar_menu_items,
 } from "@/app/layout/sideBarMenuItems";
-import { ChevronRightIcon, InventoryIcon } from "@/app/layout/sidebar-icons";
+import { ChevronRight, Package } from "lucide-react";
 
 type AppSideBarProps = {
   role: DashboardRole;
@@ -27,7 +27,7 @@ function is_active_path(pathname: string, href: string) {
 function BrandLogo() {
   return (
     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-600">
-      <InventoryIcon className="h-5 w-5 text-white" />
+      <Package aria-hidden className="h-5 w-5 text-white" />
     </div>
   );
 }
@@ -41,7 +41,7 @@ export default function AppSideBar({
   const menu_items = get_side_bar_menu_items(role);
 
   return (
-    <aside className="flex h-screen w-72 shrink-0 flex-col border-r border-zinc-200 bg-zinc-50">
+    <aside className="flex h-full w-72 shrink-0 flex-col border-r border-zinc-200 bg-zinc-50">
       <div className="border-b border-zinc-200 px-5 py-5">
         <div className="flex items-center gap-3">
           <BrandLogo />
@@ -80,7 +80,7 @@ export default function AppSideBar({
                 />
                 <span className="flex-1">{item.label}</span>
                 {item.showChevron ? (
-                  <ChevronRightIcon className="h-4 w-4 shrink-0 text-zinc-400" />
+                  <ChevronRight aria-hidden className="h-4 w-4 shrink-0 text-zinc-400" />
                 ) : null}
               </Link>
             );

@@ -58,17 +58,25 @@ async function assert_name_available(trimmed_name: string, exclude_id?: string) 
 
 export const conditions_repository = {
 
-    async list_conditions(actor_id: string, input?: PaginationInput) {
+    async list_conditions(
+        actor_id: string,
+        input?: PaginationInput & { search?: string },
+    ) {
         await assert_privileged_actor(actor_id);
         const { page, limit, skip, take } = parse_pagination(input);
+        const search = input?.search?.trim();
+        const where = search
+            ? { name: { contains: search, mode: "insensitive" as const } }
+            : undefined;
         return paginated_query({
             page,
             limit,
             skip,
             take,
-            count: () => prisma.conditions.count(),
+            count: () => prisma.conditions.count({ where }),
             find_many: ({ skip, take }) =>
                 prisma.conditions.findMany({
+                    where,
                     orderBy: { created_at: "desc" },
                     skip,
                     take,

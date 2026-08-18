@@ -17,6 +17,22 @@ const CREATABLE_ROLES_BY_ACTOR: Record<string, Set<string>> = {
   admin: new Set(["employee"]),
 };
 
+const user_with_relations = {
+  department: {
+    select: {
+      id: true,
+      name: true,
+    },
+  },
+  created_by: {
+    select: {
+      id: true,
+      full_name: true,
+      email: true,
+    },
+  },
+} as const;
+
 export class UserCreationForbiddenError extends Error {
   constructor() {
     super("You are not allowed to create this user");
@@ -50,6 +66,7 @@ export type CreateUserData = {
   email?: string | null;
   full_name?: string | null;
   role?: string | null;
+  department_id?: string | null;
   password?: string;
 };
 
@@ -68,16 +85,51 @@ async function assert_can_create_user(
   }
 }
 
+async function assert_department_exists(department_id: string) {
+  const department = await prisma.departments.findUnique({
+    where: { id: department_id },
+  });
+
+  if (!department) {
+    throw new ValidationError("Department not found");
+  }
+}
+
 export const auth_repository = {
   // Fetch a user profile by Supabase auth user id.
   find_by_id(id: string) {
     return prisma.user.findUnique({ where: { id } });
   },
 
+  find_by_id_with_relations(id: string) {
+    return prisma.user.findUnique({
+      where: { id },
+      include: user_with_relations,
+    });
+  },
+
   // List users with reusable server pagination.
-  async list_users(input?: PaginationInput & { role?: string }) {
+  async list_users(
+    input?: PaginationInput & {
+      role?: string;
+      search?: string;
+      department_id?: string;
+    },
+  ) {
     const { page, limit, skip, take } = parse_pagination(input);
-    const where = input?.role ? { role: input.role } : undefined;
+    const search = input?.search?.trim();
+    const where = {
+      ...(input?.role ? { role: input.role } : {}),
+      ...(input?.department_id ? { department_id: input.department_id } : {}),
+      ...(search
+        ? {
+            OR: [
+              { full_name: { contains: search, mode: "insensitive" as const } },
+              { email: { contains: search, mode: "insensitive" as const } },
+            ],
+          }
+        : {}),
+    };
 
     return paginated_query({
       page,
@@ -88,6 +140,7 @@ export const auth_repository = {
       find_many: ({ skip, take }) =>
         prisma.user.findMany({
           where,
+          include: user_with_relations,
           orderBy: { created_at: "desc" },
           skip,
           take,
@@ -104,11 +157,26 @@ export const auth_repository = {
     email,
     full_name,
     role,
+    department_id,
   }: CreateUserData & { actor_id: string }) {
     await assert_can_create_user(actor_id, role);
 
+    if (!department_id) {
+      throw new ValidationError("department is required");
+    }
+
+    await assert_department_exists(department_id);
+
     return prisma.user.create({
-      data: { id, email, full_name, role },
+      data: {
+        id,
+        email,
+        full_name,
+        role,
+        department_id,
+        created_by_id: actor_id,
+      },
+      include: user_with_relations,
     });
   },
 
@@ -130,6 +198,7 @@ export const auth_repository = {
         ...(email !== undefined ? { email } : {}),
         ...(full_name !== undefined ? { full_name } : {}),
       },
+      include: user_with_relations,
     });
   },
 
@@ -138,7 +207,7 @@ export const auth_repository = {
   // Update rules:
   // - employee updating self: can update full_name and password.
   // - super_admin/admin updating self: can also update email and role.
-  // - super_admin updating another user: can update email, full_name, role, and password.
+  // - super_admin updating another user: can update email, full_name, role, password, and department.
   // - employee updating another user: not allowed.
   async update_user({
     actor_id,
@@ -146,6 +215,7 @@ export const auth_repository = {
     email,
     full_name,
     role,
+    department_id,
     password,
   }: CreateUserData & { actor_id: string }) {
     const existing = await prisma.user.findUnique({ where: { id } });
@@ -186,6 +256,13 @@ export const auth_repository = {
       throw new UserUpdateForbiddenError();
     }
 
+    const next_email =
+      email !== undefined &&
+      email !== existing.email &&
+      (can_edit_sensitive_fields || can_manage_other_user)
+        ? email
+        : undefined;
+
     if (password !== undefined) {
       if (!is_self_update && !can_manage_other_user) {
         throw new UserUpdateForbiddenError();
@@ -194,24 +271,38 @@ export const auth_repository = {
       if (password.length < 6) {
         throw new ValidationError("password must be at least 6 characters");
       }
+    }
 
-      if (is_self_update) {
-        const supabase = await createClient();
-        const { error } = await supabase.auth.updateUser({ password });
+    if (is_self_update && password !== undefined) {
+      const supabase = await createClient();
+      const { error } = await supabase.auth.updateUser({ password });
 
-        if (error) {
-          throw new ValidationError(error.message);
-        }
-      } else {
-        const supabase = create_admin_client();
-        const { error } = await supabase.auth.admin.updateUserById(id, {
-          password,
-        });
-
-        if (error) {
-          throw new ValidationError(error.message);
-        }
+      if (error) {
+        throw new ValidationError(error.message);
       }
+    }
+
+    if (can_manage_other_user && (password !== undefined || next_email)) {
+      const supabase = create_admin_client();
+      const { error } = await supabase.auth.admin.updateUserById(id, {
+        ...(password !== undefined ? { password } : {}),
+        ...(next_email ? { email: next_email } : {}),
+      });
+
+      if (error) {
+        throw new ValidationError(error.message);
+      }
+    }
+
+    const can_update_department =
+      can_edit_sensitive_fields || can_manage_other_user;
+
+    if (department_id !== undefined && !can_update_department) {
+      throw new UserUpdateForbiddenError();
+    }
+
+    if (department_id) {
+      await assert_department_exists(department_id);
     }
 
     return prisma.user.update({
@@ -223,7 +314,11 @@ export const auth_repository = {
           ? { email }
           : {}),
         ...(can_edit_sensitive_fields && role !== undefined ? { role } : {}),
+        ...(can_update_department && department_id !== undefined
+          ? { department_id }
+          : {}),
       },
+      include: user_with_relations,
     });
   },
 };

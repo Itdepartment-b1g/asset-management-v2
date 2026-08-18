@@ -17,6 +17,7 @@ type CreateUserBody = {
   password?: string;
   full_name?: string | null;
   role?: string | null;
+  department_id?: string | null;
 };
 
 type UpdateUserBody = {
@@ -24,6 +25,7 @@ type UpdateUserBody = {
   email?: string | null;
   full_name?: string | null;
   role?: string | null;
+  department_id?: string | null;
   password?: string;
 };
 

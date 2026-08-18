@@ -3,7 +3,13 @@ import "server-only";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@/generated/prisma/client";
 
-const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
+// Bump this when user/model relations change so HMR does not reuse a stale client.
+const PRISMA_SCHEMA_STAMP = "user.department_id+user.created_by_id";
+
+const globalForPrisma = globalThis as unknown as {
+  prisma?: PrismaClient;
+  prisma_schema_stamp?: string;
+};
 
 function createPrismaClient() {
   const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
@@ -13,9 +19,12 @@ function createPrismaClient() {
 function getPrismaClient() {
   const cached = globalForPrisma.prisma;
 
-  // Recreate after schema changes — dev hot reload can keep an old client
-  // without newly added model delegates (e.g. prisma.user).
-  if (cached && "user" in cached && "legend" in cached) {
+  if (
+    cached &&
+    globalForPrisma.prisma_schema_stamp === PRISMA_SCHEMA_STAMP &&
+    "user" in cached &&
+    "legend" in cached
+  ) {
     return cached;
   }
 
@@ -23,6 +32,7 @@ function getPrismaClient() {
 
   if (process.env.NODE_ENV !== "production") {
     globalForPrisma.prisma = client;
+    globalForPrisma.prisma_schema_stamp = PRISMA_SCHEMA_STAMP;
   }
 
   return client;

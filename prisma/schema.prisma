@@ -14,21 +14,27 @@ enum user_role {
 }
 
 model user {
-  id         String       @id
-  email      String?      @unique
-  full_name  String?
-  role       String?
-  created_at DateTime     @default(now())
-  updated_at DateTime     @updatedAt
+  id            String    @id
+  email         String?   @unique
+  full_name     String?
+  role          String?
+  department_id String?
+  created_by_id String?
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+
+  department  departments? @relation("users_in_department", fields: [department_id], references: [id], onDelete: SetNull)
+  created_by  user?        @relation("user_created_by", fields: [created_by_id], references: [id], onDelete: SetNull)
+  created_users user[]     @relation("user_created_by")
 
   currently_issued_assets  asset_information[] @relation("current_issue")
   originally_issued_assets asset_information[] @relation("original_issue")
-  
-  created_assets asset_information[] @relation("created_by")
-  created_departments departments[] @relation("created_by")
-  created_locations locations[] @relation("created_by")
-  created_conditions conditions[] @relation("created_by")
-  created_legend legend[] @relation("created_by")
+
+  created_assets      asset_information[] @relation("created_by")
+  created_departments departments[]       @relation("created_by")
+  created_locations   locations[]         @relation("created_by")
+  created_conditions  conditions[]        @relation("created_by")
+  created_legend      legend[]            @relation("created_by")
 }
 
 model asset_information {
@@ -68,7 +74,8 @@ model departments {
   updated_at DateTime @updatedAt
 
   asset_information asset_information[]
-  created_by user? @relation("created_by", fields: [created_by_id], references: [id])
+  users             user[]              @relation("users_in_department")
+  created_by        user?               @relation("created_by", fields: [created_by_id], references: [id])
 }
 
 model locations {

@@ -93,7 +93,7 @@ export default function Dropdown({
       </button>
 
       {open && (
-        <div className="absolute z-10 mt-1 w-full overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-lg">
+        <div className="absolute z-50 mt-1 w-full overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-lg">
           {isSearchable && (
             <div className="flex items-center gap-2 border-b border-zinc-200 px-3 py-2">
               <Search aria-hidden className="h-4 w-4 text-zinc-400" />

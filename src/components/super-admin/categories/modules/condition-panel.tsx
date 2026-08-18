@@ -7,6 +7,7 @@ import { AsyncStatus } from "@/components/common/async-status";
 import Pagination, {
   type PaginationMeta,
 } from "@/components/common/pagination";
+import SearchInput from "@/components/common/search-input";
 import TableView from "@/components/common/table-view";
 
 import {
@@ -58,12 +59,15 @@ export default function ConditionPanel() {
   const [addName, setAddName] = useState("");
   const [editing, setEditing] = useState<ConditionItem | null>(null);
   const [deleting, setDeleting] = useState<ConditionItem | null>(null);
+  const [searchInput, setSearchInput] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   async function loadPage(
     pageToLoad: number,
-    opts?: { manageLoading?: boolean; limit?: number },
+    opts?: { manageLoading?: boolean; limit?: number; search?: string },
   ) {
     const manageLoading = opts?.manageLoading ?? true;
     const limitToUse = opts?.limit ?? limit;
+    const searchToUse = opts?.search ?? searchQuery;
 
     if (manageLoading) {
       setLoading(true);
@@ -72,7 +76,7 @@ export default function ConditionPanel() {
     }
 
     try {
-      const cacheKey = `/api/condition|page=${pageToLoad}|limit=${limitToUse}`;
+      const cacheKey = `/api/condition|page=${pageToLoad}|limit=${limitToUse}|search=${searchToUse}`;
       const cached = conditionPageCache.get(cacheKey);
       if (cached) {
         setItems(cached.data);
@@ -84,6 +88,9 @@ export default function ConditionPanel() {
       const params = new URLSearchParams();
       params.set("page", String(pageToLoad));
       params.set("limit", String(limitToUse));
+      if (searchToUse) {
+        params.set("search", searchToUse);
+      }
 
       const response = await fetch(`/api/condition?${params.toString()}`, {
         ...fetchOptions,
@@ -103,15 +110,21 @@ export default function ConditionPanel() {
   }
 
   useEffect(() => {
+    const nextSearch = searchInput.trim();
+    const delay = nextSearch === searchQuery ? 0 : 150;
     const t = window.setTimeout(() => {
-      void loadPage(1);
-    }, 0);
+      setSearchQuery(nextSearch);
+      void loadPage(1, {
+        search: nextSearch,
+        manageLoading: nextSearch === searchQuery,
+      });
+    }, delay);
 
     return () => {
       window.clearTimeout(t);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- initial load only
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- search-driven reload
+  }, [searchInput]);
 
   const columns = ConditionTableView(
     loading,
@@ -225,6 +238,15 @@ export default function ConditionPanel() {
         </form>
       </div>
 
+      <div className="mb-3">
+        <SearchInput
+          value={searchInput}
+          onChange={setSearchInput}
+          placeholder="Search conditions"
+          className="w-full sm:max-w-md"
+        />
+      </div>
+
       {loading || error || success ? (
         <div className="mb-3">
           <AsyncStatus
@@ -240,7 +262,11 @@ export default function ConditionPanel() {
         columns={columns}
         rows={items}
         rowKey={(row) => row.id}
-        emptyMessage="No conditions yet—use the form above to add one."
+        emptyMessage={
+          searchQuery
+            ? "No conditions match your search."
+            : "No conditions yet—use the form above to add one."
+        }
         isAccordion={false}
       />
 

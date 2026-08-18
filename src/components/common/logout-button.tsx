@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { LogoutIcon } from "@/app/layout/sidebar-icons";
+import { LogOut } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { clearAuthUser } from "@/lib/store/slices/auth-slices";
 import { useAppDispatch } from "@/lib/store/hooks";
@@ -29,7 +29,7 @@ export function LogoutButton({ variant = "default" }: LogoutButtonProps) {
         onClick={handleLogout}
         className="flex w-full items-center justify-center gap-2 rounded-lg border border-zinc-200 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-800 transition hover:bg-zinc-50"
       >
-        <LogoutIcon className="h-5 w-5" />
+        <LogOut aria-hidden className="h-5 w-5" />
         Logout
       </button>
     );

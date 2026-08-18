@@ -204,6 +204,21 @@ export const authPaths = {
           },
           description: "Filter by role when listing users (super_admin only).",
         },
+        {
+          name: "search",
+          in: "query",
+          required: false,
+          schema: { type: "string" },
+          description: "Case-insensitive search against full name and email.",
+        },
+        {
+          name: "department_id",
+          in: "query",
+          required: false,
+          schema: { type: "string", format: "uuid" },
+          description:
+            "When set, list and search are limited to users in this department.",
+        },
       ],
       responses: {
         "200": {
@@ -286,8 +301,44 @@ export const authSchemas = {
         nullable: true,
         enum: ["super_admin", "admin", "employee"],
       },
+      department_id: { type: "string", format: "uuid", nullable: true },
+      department: {
+        nullable: true,
+        allOf: [{ $ref: "#/components/schemas/UserDepartment" }],
+      },
+      created_by_id: { type: "string", format: "uuid", nullable: true },
+      created_by: {
+        nullable: true,
+        allOf: [{ $ref: "#/components/schemas/UserCreatedBy" }],
+      },
     },
-    required: ["id", "email", "full_name", "role"],
+    required: [
+      "id",
+      "email",
+      "full_name",
+      "role",
+      "department_id",
+      "department",
+      "created_by_id",
+      "created_by",
+    ],
+  },
+  UserDepartment: {
+    type: "object",
+    properties: {
+      id: { type: "string", format: "uuid" },
+      name: { type: "string" },
+    },
+    required: ["id", "name"],
+  },
+  UserCreatedBy: {
+    type: "object",
+    properties: {
+      id: { type: "string", format: "uuid" },
+      full_name: { type: "string", nullable: true },
+      email: { type: "string", format: "email", nullable: true },
+    },
+    required: ["id", "full_name", "email"],
   },
   LoginResponse: {
     allOf: [
@@ -343,8 +394,13 @@ export const authSchemas = {
         enum: ["super_admin", "admin", "employee"],
         example: "employee",
       },
+      department_id: {
+        type: "string",
+        format: "uuid",
+        example: "11111111-1111-1111-1111-111111111111",
+      },
     },
-    required: ["email", "password", "role"],
+    required: ["email", "password", "role", "department_id"],
   },
   UpdateUserBody: {
     type: "object",
@@ -368,6 +424,11 @@ export const authSchemas = {
       role: {
         type: "string",
         enum: ["super_admin", "admin", "employee"],
+      },
+      department_id: {
+        type: "string",
+        format: "uuid",
+        nullable: true,
       },
       password: {
         type: "string",

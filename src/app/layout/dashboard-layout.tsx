@@ -15,13 +15,15 @@ export default function DashboardLayout({
   children,
 }: DashboardLayoutProps) {
   return (
-    <div className="flex min-h-screen bg-white">
+    <div className="flex h-screen overflow-hidden bg-white">
       <AppSideBar
         role={role}
         user_name={user_name}
         user_email={user_email}
       />
-      <main className="flex-1 overflow-auto bg-zinc-50 p-6 lg:p-8">{children}</main>
+      <main className="min-h-0 flex-1 overflow-y-auto bg-zinc-50 p-6 lg:p-8">
+        {children}
+      </main>
     </div>
   );
 }

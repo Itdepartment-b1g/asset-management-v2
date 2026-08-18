@@ -26,6 +26,13 @@ export const legendPaths = {
           required: false,
           schema: { type: "integer", minimum: 1, maximum: 100, default: 10 },
         },
+        {
+          name: "search",
+          in: "query",
+          required: false,
+          schema: { type: "string" },
+          description: "Case-insensitive search against legend name and color.",
+        },
       ],
       responses: {
         "200": {

@@ -58,19 +58,32 @@ function validate_color(color: string) {
   return trimmed;
 }
 export const legend_repository = {
-  async list_legends(actor_id: string, input?: PaginationInput) {
+  async list_legends(
+    actor_id: string,
+    input?: PaginationInput & { search?: string },
+  ) {
     await assert_privileged_actor(actor_id);
 
     const { page, limit, skip, take } = parse_pagination(input);
+    const search = input?.search?.trim();
+    const where = search
+      ? {
+          OR: [
+            { name: { contains: search, mode: "insensitive" as const } },
+            { color: { contains: search, mode: "insensitive" as const } },
+          ],
+        }
+      : undefined;
 
     return paginated_query({
       page,
       limit,
       skip,
       take,
-      count: () => prisma.legend.count(),
+      count: () => prisma.legend.count({ where }),
       find_many: ({ skip, take }) =>
         prisma.legend.findMany({
+          where,
           orderBy: { created_at: "desc" },
           skip,
           take,

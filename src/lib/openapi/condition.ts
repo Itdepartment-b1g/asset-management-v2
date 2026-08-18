@@ -26,6 +26,13 @@ export const conditionPaths = {
             required: false,
             schema: { type: "integer", minimum: 1, maximum: 100, default: 10 },
           },
+          {
+            name: "search",
+            in: "query",
+            required: false,
+            schema: { type: "string" },
+            description: "Case-insensitive search against condition name.",
+          },
         ],
         responses: {
           "200": {
