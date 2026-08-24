@@ -4,7 +4,8 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@/generated/prisma/client";
 
 // Bump this when user/model relations change so HMR does not reuse a stale client.
-const PRISMA_SCHEMA_STAMP = "user.department_id+user.created_by_id";
+const PRISMA_SCHEMA_STAMP =
+  "asset_information.direct_relations+condition_ids+asset_photo+asset_transfer";
 
 const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;
@@ -23,7 +24,9 @@ function getPrismaClient() {
     cached &&
     globalForPrisma.prisma_schema_stamp === PRISMA_SCHEMA_STAMP &&
     "user" in cached &&
-    "legend" in cached
+    "asset_information" in cached &&
+    "asset_photo" in cached &&
+    "asset_transfer" in cached
   ) {
     return cached;
   }

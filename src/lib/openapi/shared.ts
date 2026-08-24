@@ -33,6 +33,10 @@ export const tags = [
     name: "condition",
     description: "Manage asset conditions",
   },
+  {
+    name: "asset",
+    description: "Create and manage assets, including warranty and receipt photos",
+  },
 ];
 
 export const securitySchemes = {

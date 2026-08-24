@@ -52,11 +52,7 @@ export function LocationTableView(
           <button
             type="button"
             className="inline-flex items-center gap-2 rounded-md border border-red-200 bg-white px-2.5 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50"
-            onClick={() => {
-              const ok = window.confirm(`Delete "${row.name}"?`);
-              if (!ok) return;
-              onDelete(row);
-            }}
+            onClick={() => onDelete(row)}
             disabled={loading}
           >
             <Trash2 aria-hidden className="h-3.5 w-3.5" />

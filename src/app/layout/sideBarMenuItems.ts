@@ -1,5 +1,5 @@
 import type { ComponentType } from "react";
-import { LayoutDashboard, Settings, Tags, Users } from "lucide-react";
+import { LayoutDashboard, Package, Settings, Tags, Users } from "lucide-react";
 import type { DashboardRole } from "@/lib/auth/dashboard";
 
 export type SideBarMenuItem = {
@@ -15,12 +15,12 @@ export const employee_menu_items: SideBarMenuItem[] = [
 
 export const super_admin_menu_items: SideBarMenuItem[] = [
   { label: "Dashboard", href: "/super-admin", icon: LayoutDashboard },
-  // {
-  //   label: "Inventory",
-  //   href: "/super-admin/inventory",
-  //   icon: Package,
-  //   showChevron: true,
-  // },
+  {
+    label: "Inventory",
+    href: "/super-admin/inventory",
+    icon: Package,
+    showChevron: false,
+  },
   {
     label: "Users",
     href: "/super-admin/users",
@@ -43,12 +43,12 @@ export const super_admin_menu_items: SideBarMenuItem[] = [
 
 export const admin_menu_items: SideBarMenuItem[] = [
   { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
-  // {
-  //   label: "Inventory",
-  //   href: "/admin/inventory",
-  //   icon: Package,
-  //   showChevron: true,
-  // },
+  {
+    label: "Inventory",
+    href: "/admin/inventory",
+    icon: Package,
+    showChevron: false,
+  },
   {
     label: "Categories",
     href: "/admin/categories",

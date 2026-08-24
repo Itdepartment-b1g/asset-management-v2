@@ -13,6 +13,17 @@ enum user_role {
   employee
 }
 
+enum asset_photo_kind {
+  warranty
+  receipt
+}
+
+enum asset_status {
+  active
+  inactive
+  stored
+}
+
 model user {
   id            String    @id
   email         String?   @unique
@@ -30,6 +41,10 @@ model user {
   currently_issued_assets  asset_information[] @relation("current_issue")
   originally_issued_assets asset_information[] @relation("original_issue")
 
+  transfers_from     asset_transfer[] @relation("transfer_from")
+  transfers_to       asset_transfer[] @relation("transfer_to")
+  transfers_recorded asset_transfer[] @relation("transfer_actor")
+
   created_assets      asset_information[] @relation("created_by")
   created_departments departments[]       @relation("created_by")
   created_locations   locations[]         @relation("created_by")
@@ -38,32 +53,74 @@ model user {
 }
 
 model asset_information {
-  id String @id @default(uuid())
-  asset_name String
-  code_name String
-  serial_number String?
-  purchase_date DateTime?
-  current_condition String?
-  status String?
-  remarks String?
-  vendor_name String?
-  cost_value Float?
-  salvage_value Float?
-  warranty_end_date DateTime?
-  useful_life_end_date DateTime?
-  original_issue_date DateTime?
+  id                     String                 @id @default(uuid())
+  asset_name             String
+  code_name              String                 @unique
+  serial_number          String?
+  purchase_date          DateTime?
+  current_condition_id   String?
+  condition_assignment_id String?
+  status                 asset_status?
+  remarks                String?
+  vendor_name            String?
+  cost_value             Float?
+  salvage_value          Float?
+  warranty_end_date      DateTime?
+  useful_life_end_date   DateTime?
+  original_issue_date    DateTime?
   currently_issued_to_id String?
-  created_by_id String?
+  department_id          String?
+  location_id            String?
+  legend_id              String?
+  created_by_id          String?
+  created_at             DateTime               @default(now())
+  updated_at             DateTime               @updatedAt
 
-  departments departments[]
-  locations locations[]
-  conditions conditions[]
-  legend legend[]
+  photos      asset_photo[]
+  transfers   asset_transfer[]
 
-  currently_issued_to user? @relation("current_issue", fields: [currently_issued_to_id], references: [id])
-  originally_issued_to user[]   @relation("original_issue")
+  current_condition    conditions?  @relation("asset_current_condition", fields: [current_condition_id], references: [id], onDelete: SetNull)
+  condition_assignment conditions?  @relation("asset_condition_assignment", fields: [condition_assignment_id], references: [id], onDelete: SetNull)
+  department           departments? @relation("asset_department", fields: [department_id], references: [id], onDelete: SetNull)
+  location             locations?   @relation("asset_location", fields: [location_id], references: [id], onDelete: SetNull)
+  legend               legend?      @relation("asset_legend", fields: [legend_id], references: [id], onDelete: SetNull)
+  currently_issued_to  user?        @relation("current_issue", fields: [currently_issued_to_id], references: [id])
+  originally_issued_to user[] @relation("original_issue")
 
   created_by user? @relation("created_by", fields: [created_by_id], references: [id])
+}
+
+model asset_photo {
+  id         String           @id @default(uuid())
+  asset_id   String
+  kind       asset_photo_kind
+  file_name  String
+  mime_type  String
+  byte_size  Int
+  data       Bytes
+  created_at DateTime         @default(now())
+
+  asset asset_information @relation(fields: [asset_id], references: [id], onDelete: Cascade)
+
+  @@unique([asset_id, kind])
+  @@index([asset_id])
+}
+
+model asset_transfer {
+  id                 String   @id @default(uuid())
+  asset_id           String
+  from_user_id       String?
+  to_user_id         String
+  remarks            String?
+  transferred_by_id  String
+  transferred_at     DateTime @default(now())
+
+  asset           asset_information @relation(fields: [asset_id], references: [id], onDelete: Cascade)
+  from_user       user?             @relation("transfer_from", fields: [from_user_id], references: [id], onDelete: SetNull)
+  to_user         user              @relation("transfer_to", fields: [to_user_id], references: [id], onDelete: Restrict)
+  transferred_by  user              @relation("transfer_actor", fields: [transferred_by_id], references: [id], onDelete: Restrict)
+
+  @@index([asset_id, transferred_at])
 }
 
 model departments {
@@ -73,7 +130,7 @@ model departments {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  asset_information asset_information[]
+  assets            asset_information[] @relation("asset_department")
   users             user[]              @relation("users_in_department")
   created_by        user?               @relation("created_by", fields: [created_by_id], references: [id])
 }
@@ -85,7 +142,7 @@ model locations {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  asset_information asset_information[]
+  assets asset_information[] @relation("asset_location")
   created_by user? @relation("created_by", fields: [created_by_id], references: [id])
 }
 
@@ -96,8 +153,9 @@ model conditions {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  asset_information asset_information[]
-  created_by user? @relation("created_by", fields: [created_by_id], references: [id])
+  current_assets       asset_information[] @relation("asset_current_condition")
+  assigned_assets      asset_information[] @relation("asset_condition_assignment")
+  created_by           user?               @relation("created_by", fields: [created_by_id], references: [id])
 }
 
 model legend {
@@ -108,6 +166,6 @@ model legend {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  asset_information asset_information[]
+  assets asset_information[] @relation("asset_legend")
   created_by user? @relation("created_by", fields: [created_by_id], references: [id])
 }

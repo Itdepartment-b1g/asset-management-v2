@@ -83,7 +83,7 @@ import {
     },
   );
   
-  export const addDepartment = createAsyncThunk(
+  export const addCondition = createAsyncThunk(
     "conditions/create",
     async (name: string) => {
       const response = await fetch("/api/condition", {
@@ -96,7 +96,7 @@ import {
     },
   );
   
-  export const editDepartment = createAsyncThunk(
+  export const editCondition = createAsyncThunk(
     "conditions/update",
     async ({ id, name }: { id: string; name: string }) => {
       const response = await fetch("/api/condition", {
@@ -148,13 +148,13 @@ import {
           state.error = action.error.message ?? "Failed to load conditions";
         })
         .addCase(
-          addDepartment.fulfilled,
+          addCondition.fulfilled,
             (state, action: PayloadAction<Condition>) => {
             state.items.unshift(action.payload);
           },
         )
         .addCase(
-          editDepartment.fulfilled,
+          editCondition.fulfilled,
           (state, action: PayloadAction<Condition>) => {
             const index = state.items.findIndex(
               (item) => item.id === action.payload.id,

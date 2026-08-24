@@ -3,21 +3,21 @@
 import { X } from "lucide-react";
 import { useState } from "react";
 
-import type { DepartmentItem } from "../table-views/department-table-view";
+import type { LocationItem } from "../table-views/location-table-view";
 
-type EditDepartmentDialogProps = {
-  row: DepartmentItem;
+type EditLocationDialogProps = {
+  row: LocationItem;
   loading: boolean;
   onSave: (nextName: string) => void;
   onClose: () => void;
 };
 
-export default function EditDepartmentDialog({
+export default function EditLocationDialog({
   row,
   loading,
   onSave,
   onClose,
-}: EditDepartmentDialogProps) {
+}: EditLocationDialogProps) {
   const [name, setName] = useState(row.name);
 
   return (
@@ -25,7 +25,7 @@ export default function EditDepartmentDialog({
       className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-900/40 p-4"
       role="dialog"
       aria-modal="true"
-      aria-label="Edit department"
+      aria-label="Edit location"
       onClick={onClose}
     >
       <div
@@ -34,7 +34,7 @@ export default function EditDepartmentDialog({
       >
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-base font-semibold text-zinc-900">
-            Edit department
+            Edit location
           </h3>
           <button
             type="button"
@@ -61,13 +61,8 @@ export default function EditDepartmentDialog({
               disabled={loading}
               required
               autoFocus
-              minLength={3}
-              maxLength={255}
               className="rounded-lg border border-zinc-300 bg-violet-50 px-4 py-2.5 text-sm outline-none focus:border-violet-600 disabled:opacity-50"
             />
-            <span className="text-xs text-zinc-500">
-              Use 3–255 characters: letters, numbers, and spaces only.
-            </span>
           </label>
 
           <div className="flex items-center justify-end gap-2">

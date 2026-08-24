@@ -1,6 +1,5 @@
 "use client";
 
-import { X } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { AsyncStatus } from "@/components/common/async-status";
@@ -9,7 +8,16 @@ import Pagination, {
 } from "@/components/common/pagination";
 import SearchInput from "@/components/common/search-input";
 import TableView from "@/components/common/table-view";
+import { getThunkErrorMessage } from "@/lib/store/error";
+import { useAppDispatch } from "@/lib/store/hooks";
+import {
+  addLocation,
+  editLocation,
+  removeLocation,
+} from "@/lib/store/slices/location-slice";
 
+import DeleteLocationDialog from "../dialogs/delete-location-dialog";
+import EditLocationDialog from "../dialogs/edit-location-dialog";
 import {
   LocationTableView,
   type LocationItem,
@@ -39,88 +47,8 @@ async function parseResponse<T>(response: Response): Promise<T> {
   return data as T;
 }
 
-function EditLocationDialog({
-  row,
-  loading,
-  onSave,
-  onClose,
-}: {
-  row: LocationItem;
-  loading: boolean;
-  onSave: (nextName: string) => void;
-  onClose: () => void;
-}) {
-  const [name, setName] = useState(row.name);
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-900/40 p-4"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Edit location"
-      onClick={onClose}
-    >
-      <div
-        className="w-full max-w-md rounded-xl border border-zinc-200 bg-white p-5 shadow-lg"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-base font-semibold text-zinc-900">
-            Edit location
-          </h3>
-          <button
-            type="button"
-            aria-label="Close"
-            className="rounded-md p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700"
-            onClick={onClose}
-          >
-            <X aria-hidden className="h-4 w-4" />
-          </button>
-        </div>
-
-        <form
-          className="flex flex-col gap-4"
-          onSubmit={(event) => {
-            event.preventDefault();
-            onSave(name);
-          }}
-        >
-          <label className="flex flex-col gap-1">
-            <span className="text-sm font-medium text-zinc-700">Name</span>
-            <input
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              disabled={loading}
-              required
-              autoFocus
-              className="rounded-lg border border-zinc-300 bg-violet-50 px-4 py-2.5 text-sm outline-none focus:border-violet-600 disabled:opacity-50"
-            />
-          </label>
-
-          <div className="flex items-center justify-end gap-2">
-            <button
-              type="button"
-              disabled={loading}
-              className="rounded-lg border border-zinc-200 bg-white px-4 py-2.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50 disabled:opacity-50"
-              onClick={onClose}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading || name.trim().length === 0}
-              className="rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-violet-800 disabled:opacity-50"
-            >
-              {loading ? "Please wait..." : "Save"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-}
-
 export default function LocationPanel() {
+  const dispatch = useAppDispatch();
   const [items, setItems] = useState<LocationItem[]>([]);
   const [meta, setMeta] = useState<PaginationMeta | null>(null);
 
@@ -133,6 +61,7 @@ export default function LocationPanel() {
 
   const [addName, setAddName] = useState("");
   const [editing, setEditing] = useState<LocationItem | null>(null);
+  const [deleting, setDeleting] = useState<LocationItem | null>(null);
   const [searchInput, setSearchInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -204,10 +133,10 @@ export default function LocationPanel() {
   const columns = LocationTableView(
     loading,
     (row) => setEditing(row),
-    (row) => void deleteLocation(row.id),
+    (row) => setDeleting(row),
   );
 
-  async function addLocation() {
+  async function handleAddLocation() {
     const name = addName.trim();
     if (!name) return;
 
@@ -215,25 +144,19 @@ export default function LocationPanel() {
     setError(null);
     setSuccess(null);
     try {
-      const response = await fetch("/api/location", {
-        ...fetchOptions,
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name }),
-      });
-      await parseResponse<LocationItem>(response);
+      await dispatch(addLocation(name)).unwrap();
       locationPageCache.clear();
       await loadPage(page, { manageLoading: false });
       setSuccess(`Added ${name}`);
       setAddName("");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to add location");
+      setError(getThunkErrorMessage(e, "Failed to add location"));
     } finally {
       setLoading(false);
     }
   }
 
-  async function updateLocation(id: string, nameRaw: string) {
+  async function handleUpdateLocation(id: string, nameRaw: string) {
     const name = nameRaw.trim();
     if (!name) return;
 
@@ -241,38 +164,28 @@ export default function LocationPanel() {
     setError(null);
     setSuccess(null);
     try {
-      const response = await fetch("/api/location", {
-        ...fetchOptions,
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, name }),
-      });
-      await parseResponse<LocationItem>(response);
+      await dispatch(editLocation({ id, name })).unwrap();
       locationPageCache.clear();
       await loadPage(page, { manageLoading: false });
       setSuccess(`Updated ${name}`);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to update location");
+      setError(getThunkErrorMessage(e, "Failed to update location"));
     } finally {
       setLoading(false);
     }
   }
 
-  async function deleteLocation(id: string) {
+  async function handleDeleteLocation(id: string) {
     setLoading(true);
     setError(null);
     setSuccess(null);
     try {
-      const response = await fetch(`/api/location?id=${id}`, {
-        ...fetchOptions,
-        method: "DELETE",
-      });
-      await parseResponse<LocationItem>(response);
+      await dispatch(removeLocation(id)).unwrap();
       locationPageCache.clear();
       await loadPage(page, { manageLoading: false });
       setSuccess("Deleted");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to delete location");
+      setError(getThunkErrorMessage(e, "Failed to delete location"));
     } finally {
       setLoading(false);
     }
@@ -289,7 +202,7 @@ export default function LocationPanel() {
           className="flex flex-col gap-3 sm:flex-row sm:items-end"
           onSubmit={(e) => {
             e.preventDefault();
-            void addLocation();
+            void handleAddLocation();
           }}
         >
           <label className="flex flex-1 flex-col gap-1">
@@ -364,10 +277,23 @@ export default function LocationPanel() {
           row={editing}
           loading={loading}
           onSave={(nextName) => {
-            void updateLocation(editing.id, nextName);
+            void handleUpdateLocation(editing.id, nextName);
             setEditing(null);
           }}
           onClose={() => setEditing(null)}
+        />
+      ) : null}
+
+      {deleting ? (
+        <DeleteLocationDialog
+          key={deleting.id}
+          row={deleting}
+          loading={loading}
+          onConfirm={() => {
+            void handleDeleteLocation(deleting.id);
+            setDeleting(null);
+          }}
+          onClose={() => setDeleting(null)}
         />
       ) : null}
     </section>

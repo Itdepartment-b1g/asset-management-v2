@@ -3,6 +3,7 @@ import { legendPaths, legendSchemas } from "./legend";
 import { locationPaths, locationSchemas } from "./location";
 import { departmentPaths, departmentSchemas } from "./department";
 import { conditionPaths, conditionSchemas } from "./condition";
+import { assetPaths, assetSchemas } from "./asset";
 import { info, securitySchemes, servers, sharedSchemas, tags } from "./shared";
 
 
@@ -17,6 +18,7 @@ export const openApiDocument = {
     ...locationPaths,
     ...departmentPaths,
     ...conditionPaths,
+    ...assetPaths,
   },
   components: {
     securitySchemes,
@@ -26,6 +28,7 @@ export const openApiDocument = {
       ...locationSchemas,
       ...departmentSchemas,
       ...conditionSchemas,
+      ...assetSchemas,
       ...sharedSchemas,
     },
   },

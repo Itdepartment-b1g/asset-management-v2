@@ -9,6 +9,13 @@ import Pagination, {
 } from "@/components/common/pagination";
 import SearchInput from "@/components/common/search-input";
 import TableView from "@/components/common/table-view";
+import { getThunkErrorMessage } from "@/lib/store/error";
+import { useAppDispatch } from "@/lib/store/hooks";
+import {
+  addDepartment,
+  editDepartment,
+  removeDepartment,
+} from "@/lib/store/slices/department-slice";
 
 import {
   DepartmentTableView,
@@ -46,6 +53,7 @@ async function parseResponse<T>(response: Response): Promise<T> {
 
 
 export default function DepartmentPanel() {
+  const dispatch = useAppDispatch();
   const [items, setItems] = useState<DepartmentItem[]>([]);
   const [meta, setMeta] = useState<PaginationMeta | null>(null);
 
@@ -132,7 +140,7 @@ export default function DepartmentPanel() {
     (row) => setDeleting(row),
   );
 
-  async function addDepartment() {
+  async function handleAddDepartment() {
     const name = addName.trim();
     if (!name) return;
 
@@ -140,25 +148,19 @@ export default function DepartmentPanel() {
     setError(null);
     setSuccess(null);
     try {
-      const response = await fetch("/api/department", {
-        ...fetchOptions,
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name }),
-      });
-      await parseResponse<DepartmentItem>(response);
+      await dispatch(addDepartment(name)).unwrap();
       departmentPageCache.clear();
       await loadPage(page, { manageLoading: false });
       setSuccess(`Added ${name}`);
       setAddName("");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to add department");
+      setError(getThunkErrorMessage(e, "Failed to add department"));
     } finally {
       setLoading(false);
     }
   }
 
-  async function updateDepartment(id: string, nameRaw: string) {
+  async function handleUpdateDepartment(id: string, nameRaw: string) {
     const name = nameRaw.trim();
     if (!name) return;
 
@@ -166,38 +168,28 @@ export default function DepartmentPanel() {
     setError(null);
     setSuccess(null);
     try {
-      const response = await fetch("/api/department", {
-        ...fetchOptions,
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, name }),
-      });
-      await parseResponse<DepartmentItem>(response);
+      await dispatch(editDepartment({ id, name })).unwrap();
       departmentPageCache.clear();
       await loadPage(page, { manageLoading: false });
       setSuccess(`Updated ${name}`);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to update department");
+      setError(getThunkErrorMessage(e, "Failed to update department"));
     } finally {
       setLoading(false);
     }
   }
 
-  async function deleteDepartment(id: string) {
+  async function handleDeleteDepartment(id: string) {
     setLoading(true);
     setError(null);
     setSuccess(null);
     try {
-      const response = await fetch(`/api/department?id=${id}`, {
-        ...fetchOptions,
-        method: "DELETE",
-      });
-      await parseResponse<DepartmentItem>(response);
+      await dispatch(removeDepartment(id)).unwrap();
       departmentPageCache.clear();
       await loadPage(page, { manageLoading: false });
       setSuccess("Deleted");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to delete department");
+      setError(getThunkErrorMessage(e, "Failed to delete department"));
     } finally {
       setLoading(false);
     }
@@ -214,7 +206,7 @@ export default function DepartmentPanel() {
           className="flex flex-col gap-3 sm:flex-row sm:items-end"
           onSubmit={(e) => {
             e.preventDefault();
-            void addDepartment();
+            void handleAddDepartment();
           }}
         >
           <label className="flex flex-1 flex-col gap-1">
@@ -224,9 +216,14 @@ export default function DepartmentPanel() {
               onChange={(e) => setAddName(e.target.value)}
               disabled={loading}
               required
+              minLength={3}
+              maxLength={255}
               className="rounded-lg border border-zinc-300 bg-violet-50 px-4 py-2.5 text-sm outline-none focus:border-violet-600 disabled:opacity-50"
               placeholder="Add department"
             />
+            <span className="text-xs text-zinc-500">
+              Use 3–255 characters: letters, numbers, and spaces only.
+            </span>
           </label>
           <button
             type="submit"
@@ -289,7 +286,7 @@ export default function DepartmentPanel() {
           row={editing}
           loading={loading}
           onSave={(nextName) => {
-            void updateDepartment(editing.id, nextName);
+            void handleUpdateDepartment(editing.id, nextName);
             setEditing(null);
           }}
           onClose={() => setEditing(null)}
@@ -302,7 +299,7 @@ export default function DepartmentPanel() {
             row={deleting}
             loading={loading}
             onConfirm={() => {
-            void deleteDepartment(deleting.id);
+            void handleDeleteDepartment(deleting.id);
             setDeleting(null);
             }}
             onClose={() => setDeleting(null)}

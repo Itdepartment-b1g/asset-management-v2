@@ -9,7 +9,13 @@ import Pagination, {
 } from "@/components/common/pagination";
 import SearchInput from "@/components/common/search-input";
 import TableView from "@/components/common/table-view";
-
+import { getThunkErrorMessage } from "@/lib/store/error";
+import { useAppDispatch } from "@/lib/store/hooks";
+import {
+  addLegend,
+  deleteLegend,
+  editLegend,
+} from "@/lib/store/slices/legend-slice";
 import DeleteLegendDialog from "../dialogs/delete-legend-dialog";
 import EditLegendDialog from "../dialogs/edit-legend-dialog";
 import {
@@ -42,6 +48,7 @@ async function parseResponse<T>(response: Response): Promise<T> {
 }
 
 export default function LegendPanel() {
+  const dispatch = useAppDispatch();
   const [items, setItems] = useState<LegendItem[]>([]);
   const [meta, setMeta] = useState<PaginationMeta | null>(null);
 
@@ -130,7 +137,7 @@ export default function LegendPanel() {
     (row) => setDeleting(row),
   );
 
-  async function addLegend() {
+  async function handleAddLegend() {
     const name = addName.trim();
     const color = addColor.trim();
     if (!name || !color) return;
@@ -139,25 +146,19 @@ export default function LegendPanel() {
     setError(null);
     setSuccess(null);
     try {
-      const response = await fetch(`/api/legend`, {
-        ...fetchOptions,
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, color }),
-      });
-      await parseResponse<LegendItem>(response);
+      await dispatch(addLegend({ name, color })).unwrap();
       legendPageCache.clear();
       await loadPage(page, { manageLoading: false });
       setSuccess(`Added ${name}`);
       setAddName("");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to add legend");
+      setError(getThunkErrorMessage(e, "Failed to add legend"));
     } finally {
       setLoading(false);
     }
   }
 
-  async function updateLegend(id: string, name: string, color: string) {
+  async function handleUpdateLegend(id: string, name: string, color: string) {
     const nextName = name.trim();
     const nextColor = color.trim();
     if (!nextName || !nextColor) return;
@@ -166,38 +167,30 @@ export default function LegendPanel() {
     setError(null);
     setSuccess(null);
     try {
-      const response = await fetch(`/api/legend`, {
-        ...fetchOptions,
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, name: nextName, color: nextColor }),
-      });
-      await parseResponse<LegendItem>(response);
+      await dispatch(
+        editLegend({ id, name: nextName, color: nextColor }),
+      ).unwrap();
       legendPageCache.clear();
       await loadPage(page, { manageLoading: false });
       setSuccess(`Updated ${nextName}`);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to update legend");
+      setError(getThunkErrorMessage(e, "Failed to update legend"));
     } finally {
       setLoading(false);
     }
   }
 
-  async function deleteLegend(id: string) {
+  async function handleDeleteLegend(id: string) {
     setLoading(true);
     setError(null);
     setSuccess(null);
     try {
-      const response = await fetch(`/api/legend?id=${id}`, {
-        ...fetchOptions,
-        method: "DELETE",
-      });
-      await parseResponse<LegendItem>(response);
+      await dispatch(deleteLegend(id)).unwrap();
       legendPageCache.clear();
       await loadPage(page, { manageLoading: false });
       setSuccess("Deleted");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to delete legend");
+      setError(getThunkErrorMessage(e, "Failed to delete legend"));
     } finally {
       setLoading(false);
     }
@@ -214,7 +207,7 @@ export default function LegendPanel() {
           className="flex flex-col gap-3 sm:flex-row sm:items-end"
           onSubmit={(e) => {
             e.preventDefault();
-            void addLegend();
+            void handleAddLegend();
           }}
         >
           <label className="flex flex-1 flex-col gap-1">
@@ -316,7 +309,7 @@ export default function LegendPanel() {
           row={editing}
           loading={loading}
           onSave={(nextName, nextColor) => {
-            void updateLegend(editing.id, nextName, nextColor);
+            void handleUpdateLegend(editing.id, nextName, nextColor);
             setEditing(null);
           }}
           onClose={() => setEditing(null)}
@@ -329,7 +322,7 @@ export default function LegendPanel() {
           row={deleting}
           loading={loading}
           onConfirm={() => {
-            void deleteLegend(deleting.id);
+            void handleDeleteLegend(deleting.id);
             setDeleting(null);
           }}
           onClose={() => setDeleting(null)}

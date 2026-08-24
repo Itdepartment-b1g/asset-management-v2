@@ -84,7 +84,7 @@ import {
   );
   
   export const addDepartment = createAsyncThunk(
-    "departments/create",
+    "department/create",
     async (name: string) => {
       const response = await fetch("/api/department", {
         ...fetchOptions,

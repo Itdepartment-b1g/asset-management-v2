@@ -9,6 +9,13 @@ import Pagination, {
 } from "@/components/common/pagination";
 import SearchInput from "@/components/common/search-input";
 import TableView from "@/components/common/table-view";
+import { getThunkErrorMessage } from "@/lib/store/error";
+import { useAppDispatch } from "@/lib/store/hooks";
+import {
+  addCondition,
+  editCondition,
+  removeCondition,
+} from "@/lib/store/slices/condition-slice";
 
 import {
     ConditionTableView,
@@ -46,6 +53,7 @@ async function parseResponse<T>(response: Response): Promise<T> {
 
 
 export default function ConditionPanel() {
+  const dispatch = useAppDispatch();
   const [items, setItems] = useState<ConditionItem[]>([]);
   const [meta, setMeta] = useState<PaginationMeta | null>(null);
 
@@ -132,7 +140,7 @@ export default function ConditionPanel() {
     (row) => setDeleting(row),
   );
 
-  async function addCondition() {
+  async function handleAddCondition() {
     const name = addName.trim();
     if (!name) return;
 
@@ -140,25 +148,19 @@ export default function ConditionPanel() {
     setError(null);
     setSuccess(null);
     try {
-        const response = await fetch("/api/condition", {
-        ...fetchOptions,
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name }),
-      });
-      await parseResponse<ConditionItem>(response);
+      await dispatch(addCondition(name)).unwrap();
       conditionPageCache.clear();
       await loadPage(page, { manageLoading: false });
       setSuccess(`Added ${name}`);
       setAddName("");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to add condition");
+      setError(getThunkErrorMessage(e, "Failed to add condition"));
     } finally {
       setLoading(false);
     }
   }
 
-  async function updateCondition(id: string, nameRaw: string) {
+  async function handleUpdateCondition(id: string, nameRaw: string) {
     const name = nameRaw.trim();
     if (!name) return;
 
@@ -166,38 +168,28 @@ export default function ConditionPanel() {
     setError(null);
     setSuccess(null);
     try {
-      const response = await fetch("/api/condition", {
-        ...fetchOptions,
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, name }),
-      });
-      await parseResponse<ConditionItem>(response);
+      await dispatch(editCondition({ id, name })).unwrap();
       conditionPageCache.clear();
       await loadPage(page, { manageLoading: false });
       setSuccess(`Updated ${name}`);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to update condition");
+      setError(getThunkErrorMessage(e, "Failed to update condition"));
     } finally {
       setLoading(false);
     }
   }
 
-  async function deleteCondition(id: string) {
+  async function handleDeleteCondition(id: string) {
     setLoading(true);
     setError(null);
     setSuccess(null);
     try {
-      const response = await fetch(`/api/condition?id=${id}`, {
-        ...fetchOptions,
-        method: "DELETE",
-      });
-      await parseResponse<ConditionItem>(response);
+      await dispatch(removeCondition(id)).unwrap();
       conditionPageCache.clear();
       await loadPage(page, { manageLoading: false });
       setSuccess("Deleted");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to delete condition");
+      setError(getThunkErrorMessage(e, "Failed to delete condition"));
     } finally {
       setLoading(false);
     }
@@ -214,7 +206,7 @@ export default function ConditionPanel() {
           className="flex flex-col gap-3 sm:flex-row sm:items-end"
           onSubmit={(e) => {
             e.preventDefault();
-            void addCondition();
+            void handleAddCondition();
           }}
         >
           <label className="flex flex-1 flex-col gap-1">
@@ -289,7 +281,7 @@ export default function ConditionPanel() {
           row={editing}
           loading={loading}
           onSave={(nextName) => {
-            void updateCondition(editing.id, nextName);
+            void handleUpdateCondition(editing.id, nextName);
             setEditing(null);
           }}
           onClose={() => setEditing(null)}
@@ -302,7 +294,7 @@ export default function ConditionPanel() {
             row={deleting}
             loading={loading}
             onConfirm={() => {
-                void deleteCondition(deleting.id);
+                void handleDeleteCondition(deleting.id);
             setDeleting(null);
             }}
             onClose={() => setDeleting(null)}

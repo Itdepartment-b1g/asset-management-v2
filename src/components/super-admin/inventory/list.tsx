@@ -1,3 +1,5 @@
+import InventoryList from "@/components/inventory/list";
+
 export default function SuperAdminInventoryList() {
-  return <div>SuperAdminInventoryList</div>;
+  return <InventoryList />;
 }
