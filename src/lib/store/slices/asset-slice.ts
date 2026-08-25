@@ -4,18 +4,10 @@ import {
   type PayloadAction,
 } from "@reduxjs/toolkit";
 
-export type AssetHolder = {
-  id: string;
-  full_name: string | null;
-  email: string | null;
-};
-
-export type Asset = {
-  id: string;
-  asset_name: string;
-  code_name: string;
-  currently_issued_to: AssetHolder | null;
-};
+import type {
+  AssetItem,
+  AssetListItem,
+} from "@/components/super-admin/inventory/lib/asset-types";
 
 export type PaginationMeta = {
   page: number;
@@ -27,8 +19,15 @@ export type PaginationMeta = {
 };
 
 export type PaginatedAssets = {
-  data: Asset[];
+  data: AssetListItem[];
   meta: PaginationMeta;
+};
+
+export type FetchAssetsInput = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: string | null;
 };
 
 type ApiError = { error: string };
@@ -36,6 +35,13 @@ type ApiError = { error: string };
 const fetchOptions: RequestInit = {
   credentials: "include",
 };
+
+const assetPageCache = new Map<string, PaginatedAssets>();
+const ASSET_CACHE_VERSION = "v5";
+
+export function clearAssetPageCache() {
+  assetPageCache.clear();
+}
 
 async function parseResponse<T>(response: Response): Promise<T> {
   const data = await response.json();
@@ -51,7 +57,7 @@ async function parseResponse<T>(response: Response): Promise<T> {
 }
 
 type AssetsState = {
-  items: Asset[];
+  items: AssetListItem[];
   meta: PaginationMeta | null;
   loading: boolean;
   error: string | null;
@@ -66,22 +72,46 @@ const initialState: AssetsState = {
 
 export const fetchAssets = createAsyncThunk(
   "assets/fetchAll",
-  async (input?: { page?: number; limit?: number }) => {
+  async (input?: FetchAssetsInput) => {
+    const page = input?.page ?? 1;
+    const limit = input?.limit ?? 10;
+    const search = input?.search?.trim() ?? "";
+    const status = input?.status?.trim() || "";
+
+    const cacheKey = `/api/asset|${ASSET_CACHE_VERSION}|page=${page}|limit=${limit}|search=${search}|status=${status}`;
+    const cached = assetPageCache.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     const params = new URLSearchParams();
-
-    if (input?.page !== undefined) {
-      params.set("page", String(input.page));
+    params.set("page", String(page));
+    params.set("limit", String(limit));
+    if (search) {
+      params.set("search", search);
     }
-    if (input?.limit !== undefined) {
-      params.set("limit", String(input.limit));
+    if (status) {
+      params.set("status", status);
     }
 
-    const query = params.toString();
-    const response = await fetch(query ? `/api/asset?${query}` : "/api/asset", {
+    const response = await fetch(`/api/asset?${params.toString()}`, {
       ...fetchOptions,
       cache: "no-store",
     });
-    return parseResponse<PaginatedAssets>(response);
+    const payload = await parseResponse<PaginatedAssets>(response);
+    assetPageCache.set(cacheKey, payload);
+    return payload;
+  },
+);
+
+export const fetchAssetById = createAsyncThunk(
+  "assets/fetchById",
+  async (id: string) => {
+    const response = await fetch(`/api/asset?id=${encodeURIComponent(id)}`, {
+      ...fetchOptions,
+      cache: "no-store",
+    });
+    return parseResponse<AssetItem>(response);
   },
 );
 
@@ -93,7 +123,7 @@ export const addAsset = createAsyncThunk(
       method: "POST",
       body: form,
     });
-    return parseResponse<Asset>(response);
+    return parseResponse<AssetItem>(response);
   },
 );
 
@@ -110,7 +140,7 @@ export const transferAsset = createAsyncThunk(
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(input),
     });
-    return parseResponse<Asset>(response);
+    return parseResponse<AssetItem>(response);
   },
 );
 
@@ -121,7 +151,7 @@ export const removeAsset = createAsyncThunk(
       ...fetchOptions,
       method: "DELETE",
     });
-    await parseResponse<Asset>(response);
+    await parseResponse<AssetItem>(response);
     return id;
   },
 );
@@ -152,12 +182,14 @@ const assetsSlice = createSlice({
         state.loading = false;
         state.error = action.error.message ?? "Failed to load assets";
       })
-      .addCase(addAsset.fulfilled, (state, action: PayloadAction<Asset>) => {
+      .addCase(addAsset.fulfilled, (state, action: PayloadAction<AssetItem>) => {
+        clearAssetPageCache();
         state.items.unshift(action.payload);
       })
       .addCase(
         transferAsset.fulfilled,
-        (state, action: PayloadAction<Asset>) => {
+        (state, action: PayloadAction<AssetItem>) => {
+          clearAssetPageCache();
           const index = state.items.findIndex(
             (item) => item.id === action.payload.id,
           );
@@ -172,7 +204,10 @@ const assetsSlice = createSlice({
       .addCase(
         removeAsset.fulfilled,
         (state, action: PayloadAction<string>) => {
-          state.items = state.items.filter((item) => item.id !== action.payload);
+          clearAssetPageCache();
+          state.items = state.items.filter(
+            (item) => item.id !== action.payload,
+          );
         },
       );
   },

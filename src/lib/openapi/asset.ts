@@ -563,7 +563,6 @@ export const assetSchemas = {
       useful_life_end_date: { type: "string", format: "date", nullable: true },
       original_issue_date: { type: "string", format: "date", nullable: true },
       currently_issued_to_id: { type: "string", format: "uuid", nullable: true },
-      department_id: { type: "string", format: "uuid" },
       location_id: { type: "string", format: "uuid" },
       legend_id: { type: "string", format: "uuid" },
       warranty_photo: { type: "string", format: "binary", nullable: true },

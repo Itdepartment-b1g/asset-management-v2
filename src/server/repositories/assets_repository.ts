@@ -45,7 +45,6 @@ export type CreateAssetInput = {
   useful_life_end_date?: Date | null;
   original_issue_date?: Date | null;
   currently_issued_to_id?: string | null;
-  department_id?: string | null;
   location_id?: string | null;
   legend_id?: string | null;
   photos?: AssetPhotoInput[];
@@ -276,16 +275,6 @@ async function assert_optional_relations(input: CreateAssetInput) {
     throw new ValidationError("Condition assignment not found");
   }
 
-  if (input.department_id) {
-    const department = await prisma.departments.findUnique({
-      where: { id: input.department_id },
-      select: { id: true },
-    });
-    if (!department) {
-      throw new ValidationError("Department not found");
-    }
-  }
-
   if (input.location_id) {
     const location = await prisma.locations.findUnique({
       where: { id: input.location_id },
@@ -470,7 +459,6 @@ export const assets_repository = {
               cost_value: input.cost_value ?? null,
               salvage_value: input.salvage_value ?? null,
               created_by_id: actor_id,
-              department_id: input.department_id ?? null,
               location_id: input.location_id ?? null,
               legend_id: input.legend_id ?? null,
               ...optional_fields,

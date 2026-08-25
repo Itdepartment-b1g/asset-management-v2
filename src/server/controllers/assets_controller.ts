@@ -119,7 +119,6 @@ async function parse_create_form(form: FormData): Promise<CreateAssetInput> {
       "Original issue date",
     ),
     currently_issued_to_id: form_string(form, "currently_issued_to_id") ?? null,
-    department_id: form_string(form, "department_id") ?? null,
     location_id: form_string(form, "location_id") ?? null,
     legend_id: form_string(form, "legend_id") ?? null,
     photos,

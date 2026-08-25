@@ -31,7 +31,6 @@ export type CreateAssetValues = {
   useful_life_end_date: string;
   original_issue_date: string;
   currently_issued_to_id: string;
-  department_id: string;
   location_id: string;
   legend_id: string;
   warranty_photo: File | null;
@@ -43,7 +42,6 @@ type AddAssetDialogProps = {
   lookupsLoading?: boolean;
   error: string | null;
   conditions: AssetLookup[];
-  departments: AssetLookup[];
   locations: AssetLookup[];
   legends: AssetLegend[];
   users: AssetUser[];
@@ -63,7 +61,6 @@ export default function AddAssetDialog({
   lookupsLoading = false,
   error,
   conditions,
-  departments,
   locations,
   legends,
   users,
@@ -86,7 +83,6 @@ export default function AddAssetDialog({
   const [currently_issued_to_id, set_currently_issued_to_id] = useState<
     string | null
   >(null);
-  const [department_id, set_department_id] = useState<string | null>(null);
   const [location_id, set_location_id] = useState<string | null>(null);
   const [legend_id, set_legend_id] = useState<string | null>(null);
   const [warranty_photo, set_warranty_photo] = useState<File | null>(null);
@@ -165,7 +161,6 @@ export default function AddAssetDialog({
               useful_life_end_date,
               original_issue_date,
               currently_issued_to_id: currently_issued_to_id ?? "",
-              department_id: department_id ?? "",
               location_id: location_id ?? "",
               legend_id: legend_id ?? "",
               warranty_photo,
@@ -268,25 +263,6 @@ export default function AddAssetDialog({
                   onChange={(event) => set_purchase_date(event.target.value)}
                   disabled={loading}
                   className={input_class}
-                />
-              </label>
-
-              <label className="flex flex-col gap-1">
-                <span className="text-sm font-medium text-zinc-700">
-                  Department
-                </span>
-                <Dropdown
-                  options={departments.map((department) => ({
-                    value: department.id,
-                    label: department.name,
-                  }))}
-                  value={department_id}
-                  onChange={set_department_id}
-                  placeholder={
-                    departments.length === 0
-                      ? "No departments yet"
-                      : "Select a department"
-                  }
                 />
               </label>
 

@@ -14,6 +14,9 @@ import { getThunkErrorMessage } from "@/lib/store/error";
 import { useAppDispatch } from "@/lib/store/hooks";
 import {
   addAsset,
+  clearAssetPageCache,
+  fetchAssetById,
+  fetchAssets,
   removeAsset,
   transferAsset,
 } from "@/lib/store/slices/asset-slice";
@@ -42,19 +45,6 @@ import {
 import AssetPhotoPreview from "./asset-photo-preview";
 import AssetTransferHistory from "./asset-transfer-history";
 import { toast } from "sonner";
-
-type PaginatedAssets = {
-  data: AssetListItem[];
-  meta: PaginationMeta;
-};
-
-type PaginatedUsers = {
-  data: AssetUser[];
-  meta: PaginationMeta;
-};
-
-const assetPageCache = new Map<string, PaginatedAssets>();
-const ASSET_CACHE_VERSION = "v4";
 
 function status_from_stat(id: AssetStatId): AssetStatus | null {
   return id === "total" ? null : id;
@@ -104,6 +94,7 @@ function user_label(user: AssetUser | null | undefined) {
 }
 
 function AssetDetails({ assetId }: { assetId: string }) {
+  const dispatch = useAppDispatch();
   const [detail, setDetail] = useState<AssetItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -115,22 +106,13 @@ function AssetDetails({ assetId }: { assetId: string }) {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch(
-          `/api/asset?id=${encodeURIComponent(assetId)}`,
-          {
-            ...fetchOptions,
-            cache: "no-store",
-          },
-        );
-        const payload = await parseResponse<AssetItem>(response);
+        const payload = await dispatch(fetchAssetById(assetId)).unwrap();
         if (!cancelled) {
           setDetail(payload);
         }
       } catch (e) {
         if (!cancelled) {
-          setError(
-            e instanceof Error ? e.message : "Failed to load asset details",
-          );
+          setError(getThunkErrorMessage(e, "Failed to load asset details"));
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -141,7 +123,7 @@ function AssetDetails({ assetId }: { assetId: string }) {
     return () => {
       cancelled = true;
     };
-  }, [assetId]);
+  }, [assetId, dispatch]);
 
   if (loading) {
     return <p className="text-sm text-zinc-500">Loading asset details...</p>;
@@ -188,9 +170,7 @@ function AssetDetails({ assetId }: { assetId: string }) {
           Department
         </p>
         <p className="mt-1 text-zinc-800">
-          {row.currently_issued_to?.department?.name ||
-            row.department?.name ||
-            "—"}
+          {row.currently_issued_to?.department?.name || "—"}
         </p>
       </div>
       <div>
@@ -320,7 +300,6 @@ export default function AssetPanel() {
   const [transferring, setTransferring] = useState<AssetListItem | null>(null);
   const [deleting, setDeleting] = useState<AssetListItem | null>(null);
   const [conditions, setConditions] = useState<AssetLookup[]>([]);
-  const [departments, setDepartments] = useState<AssetLookup[]>([]);
   const [locations, setLocations] = useState<AssetLookup[]>([]);
   const [legends, setLegends] = useState<AssetLegend[]>([]);
   const [users, setUsers] = useState<AssetUser[]>([]);
@@ -353,37 +332,19 @@ export default function AssetPanel() {
     }
 
     try {
-      const cacheKey = `/api/asset|${ASSET_CACHE_VERSION}|page=${pageToLoad}|limit=${limitToUse}|search=${searchToUse}|status=${statusToUse ?? ""}`;
-      const cached = assetPageCache.get(cacheKey);
-      if (cached) {
-        setItems(cached.data);
-        setMeta(cached.meta);
-        setPage(cached.meta.page);
-        return;
-      }
-
-      const params = new URLSearchParams();
-      params.set("page", String(pageToLoad));
-      params.set("limit", String(limitToUse));
-      if (searchToUse) {
-        params.set("search", searchToUse);
-      }
-      if (statusToUse) {
-        params.set("status", statusToUse);
-      }
-
-      const response = await fetch(`/api/asset?${params.toString()}`, {
-        ...fetchOptions,
-        cache: "no-store",
-      });
-
-      const payload = await parseResponse<PaginatedAssets>(response);
-      assetPageCache.set(cacheKey, payload);
+      const payload = await dispatch(
+        fetchAssets({
+          page: pageToLoad,
+          limit: limitToUse,
+          search: searchToUse,
+          status: statusToUse,
+        }),
+      ).unwrap();
       setItems(payload.data);
       setMeta(payload.meta);
       setPage(payload.meta.page);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to load assets");
+      setError(getThunkErrorMessage(e, "Failed to load assets"));
     } finally {
       if (manageLoading) setLoading(false);
     }
@@ -400,27 +361,18 @@ export default function AssetPanel() {
     setLookupsLoading(true);
 
     try {
-      const params = new URLSearchParams();
-      params.set("page", "1");
-      params.set("limit", "100");
+      const params = new URLSearchParams({ page: "1", limit: "100" });
       const query = params.toString();
 
-      const [
-        condition_data,
-        department_data,
-        location_data,
-        legend_data,
-        user_data,
-      ] = await Promise.all([
-        fetchLookupPage<AssetLookup>(`/api/condition?${query}`),
-        fetchLookupPage<AssetLookup>(`/api/department?${query}`),
-        fetchLookupPage<AssetLookup>(`/api/location?${query}`),
-        fetchLookupPage<AssetLegend>(`/api/legend?${query}`),
-        fetchLookupPage<AssetUser>(`/api/auth/users?${query}`),
-      ]);
+      const [condition_data, location_data, legend_data, user_data] =
+        await Promise.all([
+          fetchLookupPage<AssetLookup>(`/api/condition?${query}`),
+          fetchLookupPage<AssetLookup>(`/api/location?${query}`),
+          fetchLookupPage<AssetLegend>(`/api/legend?${query}`),
+          fetchLookupPage<AssetUser>(`/api/auth/users?${query}`),
+        ]);
 
       setConditions(condition_data);
-      setDepartments(department_data);
       setLocations(location_data);
       setLegends(legend_data);
       setUsers(user_data);
@@ -430,7 +382,7 @@ export default function AssetPanel() {
   }
 
   useEffect(() => {
-    assetPageCache.clear();
+    clearAssetPageCache();
     const t = window.setTimeout(() => {
       void loadLookups();
     }, 0);
@@ -492,7 +444,6 @@ export default function AssetPanel() {
         ["useful_life_end_date", values.useful_life_end_date],
         ["original_issue_date", values.original_issue_date],
         ["currently_issued_to_id", values.currently_issued_to_id],
-        ["department_id", values.department_id],
         ["location_id", values.location_id],
         ["legend_id", values.legend_id],
       ];
@@ -509,7 +460,7 @@ export default function AssetPanel() {
       }
 
       const created = await dispatch(addAsset(form)).unwrap();
-      assetPageCache.clear();
+      clearAssetPageCache();
       await loadPage(page, { manageLoading: false });
       setStatsRefreshKey((key) => key + 1);
       setCreating(false);
@@ -517,8 +468,7 @@ export default function AssetPanel() {
     } catch (e) {
       setError(getThunkErrorMessage(e, "Failed to add asset"));
     } finally {
-      toast.dismiss();
-      toast.error(error);
+      setLoading(false);
     }
   }
 
@@ -537,7 +487,7 @@ export default function AssetPanel() {
           remarks: values.remarks.trim() || undefined,
         }),
       ).unwrap();
-      assetPageCache.clear();
+      clearAssetPageCache();
       await loadPage(page, { manageLoading: false });
       setTransferring(null);
       toast.success(
@@ -556,7 +506,7 @@ export default function AssetPanel() {
     setSuccess(null);
     try {
       await dispatch(removeAsset(id)).unwrap();
-      assetPageCache.clear();
+      clearAssetPageCache();
       await loadPage(page, { manageLoading: false });
       setStatsRefreshKey((key) => key + 1);
       setSuccess("Deleted");
@@ -642,7 +592,6 @@ export default function AssetPanel() {
           lookupsLoading={lookupsLoading}
           error={error}
           conditions={conditions}
-          departments={departments}
           locations={locations}
           legends={legends}
           users={users}
