@@ -209,13 +209,14 @@ export default function AddAssetDialog({
               <label className="flex flex-col gap-1">
                 <span className="text-sm font-medium text-zinc-700">
                   Serial number
+                  <span className="font-normal text-zinc-500"> (optional)</span>
                 </span>
                 <input
                   value={serial_number}
                   onChange={(event) => set_serial_number(event.target.value)}
                   disabled={loading}
                   className={input_class}
-                  placeholder="Optional"
+                  placeholder="eg. 1234567890"
                 />
               </label>
 
@@ -345,14 +346,20 @@ export default function AddAssetDialog({
               <label className="flex flex-col gap-1">
                 <span className="text-sm font-medium text-zinc-700">
                   Currently issued to
+                  <span className="font-normal text-zinc-500"> (optional)</span>
                 </span>
                 <Dropdown
-                  options={users.map((user) => ({
-                    value: user.id,
-                    label: user_label(user),
-                  }))}
-                  value={currently_issued_to_id}
-                  onChange={set_currently_issued_to_id}
+                  options={[
+                    { value: "", label: "Unassigned" },
+                    ...users.map((user) => ({
+                      value: user.id,
+                      label: user_label(user),
+                    })),
+                  ]}
+                  value={currently_issued_to_id ?? ""}
+                  onChange={(id) =>
+                    set_currently_issued_to_id(id ? id : null)
+                  }
                   placeholder={
                     users.length === 0 ? "No users yet" : "Select a user"
                   }
@@ -362,6 +369,7 @@ export default function AddAssetDialog({
               <label className="flex flex-col gap-1">
                 <span className="text-sm font-medium text-zinc-700">
                   Original issue date
+                  <span className="font-normal text-zinc-500"> (optional)</span>
                 </span>
                 <input
                   type="date"
@@ -377,13 +385,14 @@ export default function AddAssetDialog({
               <label className="flex flex-col gap-1">
                 <span className="text-sm font-medium text-zinc-700">
                   Vendor name
+                  <span className="font-normal text-zinc-500"> (optional)</span>
                 </span>
                 <input
                   value={vendor_name}
                   onChange={(event) => set_vendor_name(event.target.value)}
                   disabled={loading}
                   className={input_class}
-                  placeholder="Optional"
+                  placeholder="eg. PC Express, PC worth"
                 />
               </label>
 
@@ -422,6 +431,7 @@ export default function AddAssetDialog({
               <label className="flex flex-col gap-1">
                 <span className="text-sm font-medium text-zinc-700">
                   Warranty end date
+                  <span className="font-normal text-zinc-500"> (optional)</span>
                 </span>
                 <input
                   type="date"
@@ -437,6 +447,7 @@ export default function AddAssetDialog({
               <label className="flex flex-col gap-1">
                 <span className="text-sm font-medium text-zinc-700">
                   Useful life end date
+                  <span className="font-normal text-zinc-500"> (optional)</span>
                 </span>
                 <input
                   type="date"
@@ -466,6 +477,7 @@ export default function AddAssetDialog({
               <label className="flex flex-col gap-1">
                 <span className="text-sm font-medium text-zinc-700">
                   Warranty photo
+                  <span className="font-normal text-zinc-500"> (optional)</span>
                 </span>
                 <input
                   type="file"
@@ -489,6 +501,7 @@ export default function AddAssetDialog({
               <label className="flex flex-col gap-1">
                 <span className="text-sm font-medium text-zinc-700">
                   Receipt photo
+                  <span className="font-normal text-zinc-500"> (optional)</span>
                 </span>
                 <input
                   type="file"

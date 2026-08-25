@@ -400,6 +400,38 @@ export const assets_repository = {
     const remarks = validate_optional_text(input.remarks, "Remarks");
     const vendor_name = validate_optional_text(input.vendor_name, "Vendor name");
 
+    const currently_issued_to_id = input.currently_issued_to_id ?? null;
+    const optional_fields = {
+      warranty_end_date: input.warranty_end_date ?? null,
+      useful_life_end_date: input.useful_life_end_date ?? null,
+      original_issue_date: input.original_issue_date ?? null,
+      currently_issued_to_id,
+      originally_issued_to: currently_issued_to_id
+        ? { connect: { id: currently_issued_to_id } }
+        : undefined,
+      transfers: currently_issued_to_id
+        ? {
+            create: {
+              to_user_id: currently_issued_to_id,
+              remarks: "Initial assignment",
+              transferred_by_id: actor_id,
+            },
+          }
+        : undefined,
+      photos:
+        photos.length > 0
+          ? {
+              create: photos.map((photo) => ({
+                kind: photo.kind,
+                file_name: photo.file_name,
+                mime_type: photo.mime_type,
+                byte_size: photo.byte_size,
+                data: Buffer.from(photo.data),
+              })),
+            }
+          : undefined,
+    };
+
     const max_attempts = 5;
     for (let attempt = 0; attempt < max_attempts; attempt += 1) {
       try {
@@ -418,40 +450,11 @@ export const assets_repository = {
               vendor_name,
               cost_value: input.cost_value ?? null,
               salvage_value: input.salvage_value ?? null,
-              warranty_end_date: input.warranty_end_date ?? null,
-              useful_life_end_date: input.useful_life_end_date ?? null,
-              original_issue_date:
-                input.original_issue_date ??
-                (input.currently_issued_to_id ? new Date() : null),
-              currently_issued_to_id: input.currently_issued_to_id ?? null,
               created_by_id: actor_id,
-              originally_issued_to: input.currently_issued_to_id
-                ? { connect: { id: input.currently_issued_to_id } }
-                : undefined,
-              transfers: input.currently_issued_to_id
-                ? {
-                    create: {
-                      to_user_id: input.currently_issued_to_id,
-                      remarks: "Initial assignment",
-                      transferred_by_id: actor_id,
-                    },
-                  }
-                : undefined,
               department_id: input.department_id ?? null,
               location_id: input.location_id ?? null,
               legend_id: input.legend_id ?? null,
-              photos:
-                photos.length > 0
-                  ? {
-                      create: photos.map((photo) => ({
-                        kind: photo.kind,
-                        file_name: photo.file_name,
-                        mime_type: photo.mime_type,
-                        byte_size: photo.byte_size,
-                        data: Buffer.from(photo.data),
-                      })),
-                    }
-                  : undefined,
+              ...optional_fields,
             },
             include: asset_detail_include,
           });
