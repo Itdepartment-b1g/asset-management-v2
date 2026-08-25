@@ -21,6 +21,7 @@ import {
   removeAsset,
   transferAsset,
 } from "@/lib/store/slices/asset-slice";
+import { addHolder } from "@/lib/store/slices/holder-slice";
 
 import {
   format_condition_label,
@@ -39,12 +40,16 @@ import EditAssetDialog, {
 } from "../dialogs/edit-asset-dialog";
 import TransferAssetDialog from "../dialogs/transfer-asset-dialog";
 import {
-  AssetTableView,
+  issued_to_label,
+  user_label,
   type AssetItem,
   type AssetLegend,
   type AssetListItem,
   type AssetLookup,
   type AssetUser,
+} from "../lib/asset-types";
+import {
+  AssetTableView,
 } from "../table-views/asset-table-view";
 import AssetPhotoPreview from "./asset-photo-preview";
 import AssetTransferHistory from "./asset-transfer-history";
@@ -92,9 +97,19 @@ function format_money(value: number | null) {
   });
 }
 
-function user_label(user: AssetUser | null | undefined) {
-  if (!user) return "Unassigned";
-  return user.full_name || user.email || user.id;
+async function resolve_holder_id(
+  name: string,
+  holders: AssetLookup[],
+  create: (holderName: string) => Promise<AssetLookup>,
+): Promise<string> {
+  const trimmed = name.trim();
+  const existing = holders.find(
+    (holder) => holder.name.toLowerCase() === trimmed.toLowerCase(),
+  );
+  if (existing) return existing.id;
+
+  const created = await create(trimmed);
+  return created.id;
 }
 
 function AssetDetails({ assetId }: { assetId: string }) {
@@ -144,7 +159,12 @@ function AssetDetails({ assetId }: { assetId: string }) {
   const row = detail;
   const warranty = row.photos.find((photo) => photo.kind === "warranty");
   const receipt = row.photos.find((photo) => photo.kind === "receipt");
-  const previous_holder = (row.transfers ?? [])[0]?.from_user ?? null;
+  const previous_transfer = (row.transfers ?? [])[0] ?? null;
+  const previous_holder_label = previous_transfer
+    ? previous_transfer.from_user
+      ? user_label(previous_transfer.from_user)
+      : previous_transfer.from_holder?.name || "—"
+    : "—";
   const transfers = row.transfers ?? [];
 
   return (
@@ -249,7 +269,7 @@ function AssetDetails({ assetId }: { assetId: string }) {
             Current holder
           </p>
           <p className="mt-1 text-zinc-800">
-            {user_label(row.currently_issued_to)}
+            {issued_to_label(row)}
           </p>
         </div>
         <div>
@@ -257,7 +277,7 @@ function AssetDetails({ assetId }: { assetId: string }) {
             Previous holder
           </p>
           <p className="mt-1 text-zinc-800">
-            {previous_holder ? user_label(previous_holder) : "—"}
+            {previous_holder_label}
           </p>
         </div>
       </div>
@@ -308,6 +328,7 @@ export default function AssetPanel() {
   const [locations, setLocations] = useState<AssetLookup[]>([]);
   const [legends, setLegends] = useState<AssetLegend[]>([]);
   const [users, setUsers] = useState<AssetUser[]>([]);
+  const [holders, setHolders] = useState<AssetLookup[]>([]);
   const [lookupsLoading, setLookupsLoading] = useState(false);
   const [searchInput, setSearchInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -369,18 +390,20 @@ export default function AssetPanel() {
       const params = new URLSearchParams({ page: "1", limit: "100" });
       const query = params.toString();
 
-      const [condition_data, location_data, legend_data, user_data] =
+      const [condition_data, location_data, legend_data, user_data, holder_data] =
         await Promise.all([
           fetchLookupPage<AssetLookup>(`/api/condition?${query}`),
           fetchLookupPage<AssetLookup>(`/api/location?${query}`),
           fetchLookupPage<AssetLegend>(`/api/legend?${query}`),
           fetchLookupPage<AssetUser>(`/api/auth/users?${query}`),
+          fetchLookupPage<AssetLookup>(`/api/holder?${query}`),
         ]);
 
       setConditions(condition_data);
       setLocations(location_data);
       setLegends(legend_data);
       setUsers(user_data);
+      setHolders(holder_data);
     } finally {
       setLookupsLoading(false);
     }
@@ -438,6 +461,22 @@ export default function AssetPanel() {
     setError(null);
     setSuccess(null);
     try {
+      let holder_id = values.currently_issued_holder_id;
+      if (values.other_holder_name.trim()) {
+        holder_id = await resolve_holder_id(
+          values.other_holder_name,
+          holders,
+          async (holderName) => dispatch(addHolder(holderName)).unwrap(),
+        );
+        setHolders((current) => {
+          if (current.some((holder) => holder.id === holder_id)) return current;
+          return [
+            { id: holder_id, name: values.other_holder_name.trim() },
+            ...current,
+          ];
+        });
+      }
+
       const form = new FormData();
       form.set("asset_name", asset_name);
       form.set("current_condition_id", values.current_condition_id);
@@ -455,6 +494,7 @@ export default function AssetPanel() {
         ["useful_life_end_date", values.useful_life_end_date],
         ["original_issue_date", values.original_issue_date],
         ["currently_issued_to_id", values.currently_issued_to_id],
+        ["currently_issued_holder_id", holder_id],
         ["location_id", values.location_id],
         ["legend_id", values.legend_id],
       ];
@@ -536,16 +576,41 @@ export default function AssetPanel() {
 
   async function handleTransferAsset(
     id: string,
-    values: { to_user_id: string; remarks: string; location_id: string },
+    values: {
+      to_user_id: string;
+      to_holder_id: string;
+      other_holder_name: string;
+      remarks: string;
+      location_id: string;
+    },
   ) {
     setLoading(true);
     setError(null);
     setSuccess(null);
     try {
+      let to_holder_id = values.to_holder_id;
+      if (values.other_holder_name.trim()) {
+        to_holder_id = await resolve_holder_id(
+          values.other_holder_name,
+          holders,
+          async (holderName) => dispatch(addHolder(holderName)).unwrap(),
+        );
+        setHolders((current) => {
+          if (current.some((holder) => holder.id === to_holder_id)) {
+            return current;
+          }
+          return [
+            { id: to_holder_id, name: values.other_holder_name.trim() },
+            ...current,
+          ];
+        });
+      }
+
       const updated = await dispatch(
         transferAsset({
           asset_id: id,
-          to_user_id: values.to_user_id,
+          to_user_id: values.to_user_id || null,
+          to_holder_id: to_holder_id || null,
           remarks: values.remarks.trim() || undefined,
           location_id: values.location_id.trim() || undefined,
         }),
@@ -554,7 +619,7 @@ export default function AssetPanel() {
       await loadPage(page, { manageLoading: false });
       setTransferring(null);
       toast.success(
-        `Transferred ${updated.asset_name} to ${user_label(updated.currently_issued_to)}`,
+        `Transferred ${updated.asset_name} to ${issued_to_label(updated)}`,
       );
     } catch (e) {
       setError(getThunkErrorMessage(e, "Failed to transfer asset"));
@@ -658,6 +723,7 @@ export default function AssetPanel() {
           locations={locations}
           legends={legends}
           users={users}
+          holders={holders}
           onSave={(values) => {
             void handleAddAsset(values);
           }}
@@ -693,6 +759,7 @@ export default function AssetPanel() {
           key={transferring.id}
           row={transferring}
           users={users}
+          holders={holders}
           locations={locations}
           loading={loading}
           error={error}

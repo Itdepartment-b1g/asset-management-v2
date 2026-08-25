@@ -7,7 +7,8 @@ export const runtime = "nodejs";
 
 type TransferBody = {
   asset_id?: string;
-  to_user_id?: string;
+  to_user_id?: string | null;
+  to_holder_id?: string | null;
   remarks?: string | null;
   location_id?: string | null;
 };

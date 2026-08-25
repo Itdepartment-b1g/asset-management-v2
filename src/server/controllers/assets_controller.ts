@@ -120,6 +120,8 @@ async function parse_create_form(form: FormData): Promise<CreateAssetInput> {
       "Original issue date",
     ),
     currently_issued_to_id: form_string(form, "currently_issued_to_id") ?? null,
+    currently_issued_holder_id:
+      form_string(form, "currently_issued_holder_id") ?? null,
     location_id: form_string(form, "location_id") ?? null,
     legend_id: form_string(form, "legend_id") ?? null,
     photos,
@@ -340,7 +342,8 @@ export const assets_controller = {
 
   async transfer_asset(body: {
     asset_id?: string;
-    to_user_id?: string;
+    to_user_id?: string | null;
+    to_holder_id?: string | null;
     remarks?: string | null;
     location_id?: string | null;
   }) {
@@ -350,22 +353,30 @@ export const assets_controller = {
     }
 
     const asset_id = body.asset_id?.trim();
-    const to_user_id = body.to_user_id?.trim();
+    const to_user_id = body.to_user_id?.trim() || null;
+    const to_holder_id = body.to_holder_id?.trim() || null;
     if (!asset_id) {
       return NextResponse.json(
         { error: "asset_id is required" },
         { status: 400 },
       );
     }
-    if (!to_user_id) {
+    if (!to_user_id && !to_holder_id) {
       return NextResponse.json(
-        { error: "to_user_id is required" },
+        { error: "Either to_user_id or to_holder_id is required" },
+        { status: 400 },
+      );
+    }
+    if (to_user_id && to_holder_id) {
+      return NextResponse.json(
+        { error: "Transfer cannot target both a user and a shared pool" },
         { status: 400 },
       );
     }
 
     const input: TransferAssetInput = {
       to_user_id,
+      to_holder_id,
       remarks: body.remarks ?? null,
       location_id: body.location_id?.trim() || null,
     };

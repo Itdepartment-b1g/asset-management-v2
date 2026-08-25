@@ -31,6 +31,8 @@ export type CreateAssetValues = {
   useful_life_end_date: string;
   original_issue_date: string;
   currently_issued_to_id: string;
+  currently_issued_holder_id: string;
+  other_holder_name: string;
   location_id: string;
   legend_id: string;
   warranty_photo: File | null;
@@ -45,6 +47,7 @@ type AddAssetDialogProps = {
   locations: AssetLookup[];
   legends: AssetLegend[];
   users: AssetUser[];
+  holders: AssetLookup[];
   onSave: (values: CreateAssetValues) => void;
   onClose: () => void;
 };
@@ -52,8 +55,36 @@ type AddAssetDialogProps = {
 const input_class =
   "rounded-lg border border-zinc-300 bg-violet-50 px-4 py-2.5 text-sm outline-none focus:border-violet-600 disabled:opacity-50";
 
+const ISSUED_TO_OTHER = "other";
+
 function user_label(user: AssetUser) {
   return user.full_name || user.email || user.id;
+}
+
+function encode_issued_to(kind: "user" | "holder", id: string) {
+  return `${kind}:${id}`;
+}
+
+function parse_issued_to(value: string | null): {
+  currently_issued_to_id: string;
+  currently_issued_holder_id: string;
+} {
+  if (!value) {
+    return { currently_issued_to_id: "", currently_issued_holder_id: "" };
+  }
+  if (value.startsWith("user:")) {
+    return {
+      currently_issued_to_id: value.slice(5),
+      currently_issued_holder_id: "",
+    };
+  }
+  if (value.startsWith("holder:")) {
+    return {
+      currently_issued_to_id: "",
+      currently_issued_holder_id: value.slice(7),
+    };
+  }
+  return { currently_issued_to_id: "", currently_issued_holder_id: "" };
 }
 
 export default function AddAssetDialog({
@@ -64,6 +95,7 @@ export default function AddAssetDialog({
   locations,
   legends,
   users,
+  holders,
   onSave,
   onClose,
 }: AddAssetDialogProps) {
@@ -80,9 +112,8 @@ export default function AddAssetDialog({
   const [warranty_end_date, set_warranty_end_date] = useState("");
   const [useful_life_end_date, set_useful_life_end_date] = useState("");
   const [original_issue_date, set_original_issue_date] = useState("");
-  const [currently_issued_to_id, set_currently_issued_to_id] = useState<
-    string | null
-  >(null);
+  const [issued_to, set_issued_to] = useState<string | null>(null);
+  const [other_holder_name, set_other_holder_name] = useState("");
   const [location_id, set_location_id] = useState<string | null>(null);
   const [legend_id, set_legend_id] = useState<string | null>(null);
   const [warranty_photo, set_warranty_photo] = useState<File | null>(null);
@@ -115,7 +146,8 @@ export default function AddAssetDialog({
     asset_name.trim().length > 0 &&
     current_condition_id !== null &&
     condition_assignment_id !== null &&
-    status !== null;
+    status !== null &&
+    (issued_to !== ISSUED_TO_OTHER || other_holder_name.trim().length > 0);
 
   return (
     <div
@@ -146,6 +178,7 @@ export default function AddAssetDialog({
           onSubmit={(event) => {
             event.preventDefault();
             if (!current_condition_id || !condition_assignment_id || !status) return;
+            const issued = parse_issued_to(issued_to);
             onSave({
               asset_name,
               serial_number,
@@ -160,7 +193,10 @@ export default function AddAssetDialog({
               warranty_end_date,
               useful_life_end_date,
               original_issue_date,
-              currently_issued_to_id: currently_issued_to_id ?? "",
+              currently_issued_to_id: issued.currently_issued_to_id,
+              currently_issued_holder_id: issued.currently_issued_holder_id,
+              other_holder_name:
+                issued_to === ISSUED_TO_OTHER ? other_holder_name.trim() : "",
               location_id: location_id ?? "",
               legend_id: legend_id ?? "",
               warranty_photo,
@@ -316,7 +352,7 @@ export default function AddAssetDialog({
                 ) : null}
               </label>
 
-              <label className="flex flex-col gap-1">
+              <label className="flex flex-col gap-1 sm:col-span-2">
                 <span className="text-sm font-medium text-zinc-700">
                   Currently issued to
                   <span className="font-normal text-zinc-500"> (optional)</span>
@@ -325,18 +361,38 @@ export default function AddAssetDialog({
                   options={[
                     { value: "", label: "Unassigned" },
                     ...users.map((user) => ({
-                      value: user.id,
+                      value: encode_issued_to("user", user.id),
                       label: user_label(user),
                     })),
+                    ...holders.map((holder) => ({
+                      value: encode_issued_to("holder", holder.id),
+                      label: holder.name,
+                    })),
+                    { value: ISSUED_TO_OTHER, label: "Other…" },
                   ]}
-                  value={currently_issued_to_id ?? ""}
-                  onChange={(id) =>
-                    set_currently_issued_to_id(id ? id : null)
-                  }
+                  value={issued_to ?? ""}
+                  onChange={(value) => {
+                    set_issued_to(value ? value : null);
+                    if (value !== ISSUED_TO_OTHER) {
+                      set_other_holder_name("");
+                    }
+                  }}
                   placeholder={
-                    users.length === 0 ? "No users yet" : "Select a user"
+                    users.length === 0 ? "Select a user or other" : "Select a user"
                   }
                 />
+                {issued_to === ISSUED_TO_OTHER ? (
+                  <input
+                    value={other_holder_name}
+                    onChange={(event) =>
+                      set_other_holder_name(event.target.value)
+                    }
+                    disabled={loading}
+                    required
+                    className={input_class}
+                    placeholder="eg. Universal, Warehouse (S)"
+                  />
+                ) : null}
               </label>
 
               <label className="flex flex-col gap-1">

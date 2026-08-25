@@ -183,11 +183,13 @@ export function AssetTableView(
       sortValue: (row) =>
         row.currently_issued_to?.full_name ??
         row.currently_issued_to?.email ??
+        row.currently_issued_holder?.name ??
         "",
       render: (row) => (
         <span className="text-zinc-600">
           {row.currently_issued_to?.full_name ||
             row.currently_issued_to?.email ||
+            row.currently_issued_holder?.name ||
             "—"}
         </span>
       ),

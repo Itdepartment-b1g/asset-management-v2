@@ -45,6 +45,7 @@ export type CreateAssetInput = {
   useful_life_end_date?: Date | null;
   original_issue_date?: Date | null;
   currently_issued_to_id?: string | null;
+  currently_issued_holder_id?: string | null;
   location_id?: string | null;
   legend_id?: string | null;
   photos?: AssetPhotoInput[];
@@ -69,7 +70,8 @@ export type UpdateAssetInput = {
 };
 
 export type TransferAssetInput = {
-  to_user_id: string;
+  to_user_id?: string | null;
+  to_holder_id?: string | null;
   remarks?: string | null;
   location_id?: string | null;
 };
@@ -122,6 +124,7 @@ const asset_table_select = {
   current_condition: { select: { id: true, name: true } },
   status: true,
   currently_issued_to_id: true,
+  currently_issued_holder_id: true,
   created_at: true,
   updated_at: true,
   department: { select: { id: true, name: true } },
@@ -129,6 +132,9 @@ const asset_table_select = {
   legend: { select: { id: true, name: true, color: true } },
   currently_issued_to: {
     select: issued_to_select,
+  },
+  currently_issued_holder: {
+    select: { id: true, name: true },
   },
 } as const;
 
@@ -145,6 +151,9 @@ const asset_detail_include = {
   legend: { select: { id: true, name: true, color: true } },
   currently_issued_to: {
     select: issued_to_select,
+  },
+  currently_issued_holder: {
+    select: lookup_preview_select,
   },
   created_by: {
     select: user_preview_select,
@@ -164,6 +173,8 @@ const asset_detail_include = {
     include: {
       from_user: { select: issued_to_select },
       to_user: { select: issued_to_select },
+      from_holder: { select: lookup_preview_select },
+      to_holder: { select: lookup_preview_select },
       transferred_by: { select: user_preview_select },
       from_location: { select: lookup_preview_select },
       to_location: { select: lookup_preview_select },
@@ -355,6 +366,12 @@ async function assert_optional_relations(input: CreateAssetInput) {
     }
   }
 
+  if (input.currently_issued_to_id && input.currently_issued_holder_id) {
+    throw new ValidationError(
+      "Asset cannot be issued to both a user and a shared pool",
+    );
+  }
+
   if (input.currently_issued_to_id) {
     const user = await prisma.user.findUnique({
       where: { id: input.currently_issued_to_id },
@@ -362,6 +379,16 @@ async function assert_optional_relations(input: CreateAssetInput) {
     });
     if (!user) {
       throw new ValidationError("Issued-to user not found");
+    }
+  }
+
+  if (input.currently_issued_holder_id) {
+    const holder = await prisma.holders.findUnique({
+      where: { id: input.currently_issued_holder_id },
+      select: { id: true },
+    });
+    if (!holder) {
+      throw new ValidationError("Issued-to shared pool not found");
     }
   }
 
@@ -479,26 +506,31 @@ export const assets_repository = {
     const vendor_name = validate_optional_text(input.vendor_name, "Vendor name");
 
     const currently_issued_to_id = input.currently_issued_to_id ?? null;
+    const currently_issued_holder_id =
+      input.currently_issued_holder_id ?? null;
     const location_id = input.location_id ?? null;
     const optional_fields = {
       warranty_end_date: input.warranty_end_date ?? null,
       useful_life_end_date: input.useful_life_end_date ?? null,
       original_issue_date: input.original_issue_date ?? null,
       currently_issued_to_id,
+      currently_issued_holder_id,
       originally_issued_to: currently_issued_to_id
         ? { connect: { id: currently_issued_to_id } }
         : undefined,
-      transfers: currently_issued_to_id
-        ? {
-            create: {
-              to_user_id: currently_issued_to_id,
-              from_location_id: null,
-              to_location_id: location_id,
-              remarks: "Initial assignment",
-              transferred_by_id: actor_id,
-            },
-          }
-        : undefined,
+      transfers:
+        currently_issued_to_id || currently_issued_holder_id
+          ? {
+              create: {
+                to_user_id: currently_issued_to_id,
+                to_holder_id: currently_issued_holder_id,
+                from_location_id: null,
+                to_location_id: location_id,
+                remarks: "Initial assignment",
+                transferred_by_id: actor_id,
+              },
+            }
+          : undefined,
       photos:
         photos.length > 0
           ? {
@@ -643,20 +675,41 @@ export const assets_repository = {
   ) {
     await assert_privileged_actor(actor_id);
 
-    const to_user_id = input.to_user_id.trim();
-    if (!to_user_id) {
-      throw new ValidationError("to_user_id is required");
+    const to_user_id = input.to_user_id?.trim() || null;
+    const to_holder_id = input.to_holder_id?.trim() || null;
+
+    if (!to_user_id && !to_holder_id) {
+      throw new ValidationError(
+        "Either to_user_id or to_holder_id is required",
+      );
+    }
+    if (to_user_id && to_holder_id) {
+      throw new ValidationError(
+        "Transfer cannot target both a user and a shared pool",
+      );
     }
 
     const remarks = validate_optional_text(input.remarks, "Remarks");
     const location_id = input.location_id?.trim() || null;
 
-    const to_user = await prisma.user.findUnique({
-      where: { id: to_user_id },
-      select: { id: true },
-    });
-    if (!to_user) {
-      throw new ValidationError("Transfer recipient not found");
+    if (to_user_id) {
+      const to_user = await prisma.user.findUnique({
+        where: { id: to_user_id },
+        select: { id: true },
+      });
+      if (!to_user) {
+        throw new ValidationError("Transfer recipient not found");
+      }
+    }
+
+    if (to_holder_id) {
+      const to_holder = await prisma.holders.findUnique({
+        where: { id: to_holder_id },
+        select: { id: true },
+      });
+      if (!to_holder) {
+        throw new ValidationError("Transfer shared pool not found");
+      }
     }
 
     if (location_id) {
@@ -679,8 +732,14 @@ export const assets_repository = {
       if (!asset) {
         throw new AssetNotFoundError();
       }
-      if (asset.currently_issued_to_id === to_user_id) {
+      if (to_user_id && asset.currently_issued_to_id === to_user_id) {
         throw new ValidationError("Asset is already issued to this user");
+      }
+      if (
+        to_holder_id &&
+        asset.currently_issued_holder_id === to_holder_id
+      ) {
+        throw new ValidationError("Asset is already issued to this shared pool");
       }
 
       const from_location_id = asset.location_id;
@@ -691,6 +750,8 @@ export const assets_repository = {
           asset_id,
           from_user_id: asset.currently_issued_to_id,
           to_user_id,
+          from_holder_id: asset.currently_issued_holder_id,
+          to_holder_id,
           from_location_id,
           to_location_id,
           remarks,
@@ -702,10 +763,11 @@ export const assets_repository = {
         where: { id: asset_id },
         data: {
           currently_issued_to_id: to_user_id,
+          currently_issued_holder_id: to_holder_id,
           ...(location_id ? { location_id } : {}),
           original_issue_date: asset.original_issue_date ?? new Date(),
           originally_issued_to:
-            asset.originally_issued_to.length === 0
+            to_user_id && asset.originally_issued_to.length === 0
               ? { connect: { id: to_user_id } }
               : undefined,
         },

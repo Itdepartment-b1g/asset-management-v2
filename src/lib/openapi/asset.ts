@@ -296,7 +296,7 @@ export const assetPaths = {
       tags: ["asset"],
       summary: "Transfer an asset",
       description:
-        "Reassigns an asset to another user and records the previous holder in transfer history. Restricted to super_admin and admin.",
+        "Reassigns an asset to another user or shared pool and records the previous holder in transfer history. Restricted to super_admin and admin.",
       security: [{ sessionCookie: [] }, { bearerAuth: [] }],
       requestBody: {
         required: true,
@@ -416,7 +416,9 @@ export const assetSchemas = {
     properties: {
       id: { type: "string", format: "uuid" },
       from_user_id: { type: "string", format: "uuid", nullable: true },
-      to_user_id: { type: "string", format: "uuid" },
+      to_user_id: { type: "string", format: "uuid", nullable: true },
+      from_holder_id: { type: "string", format: "uuid", nullable: true },
+      to_holder_id: { type: "string", format: "uuid", nullable: true },
       from_location_id: { type: "string", format: "uuid", nullable: true },
       to_location_id: { type: "string", format: "uuid", nullable: true },
       remarks: { type: "string", nullable: true },
@@ -426,7 +428,18 @@ export const assetSchemas = {
         allOf: [{ $ref: "#/components/schemas/AssetUserPreview" }],
         nullable: true,
       },
-      to_user: { $ref: "#/components/schemas/AssetUserPreview" },
+      to_user: {
+        allOf: [{ $ref: "#/components/schemas/AssetUserPreview" }],
+        nullable: true,
+      },
+      from_holder: {
+        allOf: [{ $ref: "#/components/schemas/AssetLookup" }],
+        nullable: true,
+      },
+      to_holder: {
+        allOf: [{ $ref: "#/components/schemas/AssetLookup" }],
+        nullable: true,
+      },
       transferred_by: { $ref: "#/components/schemas/AssetUserPreview" },
       from_location: {
         allOf: [{ $ref: "#/components/schemas/AssetLookup" }],
@@ -437,14 +450,7 @@ export const assetSchemas = {
         nullable: true,
       },
     },
-    required: [
-      "id",
-      "to_user_id",
-      "transferred_by_id",
-      "transferred_at",
-      "to_user",
-      "transferred_by",
-    ],
+    required: ["id", "transferred_by_id", "transferred_at", "transferred_by"],
   },
   Asset: {
     type: "object",
@@ -486,6 +492,11 @@ export const assetSchemas = {
         nullable: true,
       },
       currently_issued_to_id: { type: "string", format: "uuid", nullable: true },
+      currently_issued_holder_id: {
+        type: "string",
+        format: "uuid",
+        nullable: true,
+      },
       created_by_id: { type: "string", format: "uuid", nullable: true },
       created_at: { type: "string", format: "date-time" },
       updated_at: { type: "string", format: "date-time" },
@@ -503,6 +514,10 @@ export const assetSchemas = {
       },
       currently_issued_to: {
         allOf: [{ $ref: "#/components/schemas/AssetUserPreview" }],
+        nullable: true,
+      },
+      currently_issued_holder: {
+        allOf: [{ $ref: "#/components/schemas/AssetLookup" }],
         nullable: true,
       },
       created_by: {
@@ -535,6 +550,11 @@ export const assetSchemas = {
         nullable: true,
       },
       currently_issued_to_id: { type: "string", format: "uuid", nullable: true },
+      currently_issued_holder_id: {
+        type: "string",
+        format: "uuid",
+        nullable: true,
+      },
       created_at: { type: "string", format: "date-time" },
       updated_at: { type: "string", format: "date-time" },
       department: {
@@ -551,6 +571,10 @@ export const assetSchemas = {
       },
       currently_issued_to: {
         allOf: [{ $ref: "#/components/schemas/AssetUserPreview" }],
+        nullable: true,
+      },
+      currently_issued_holder: {
+        allOf: [{ $ref: "#/components/schemas/AssetLookup" }],
         nullable: true,
       },
     },
@@ -573,6 +597,11 @@ export const assetSchemas = {
       useful_life_end_date: { type: "string", format: "date", nullable: true },
       original_issue_date: { type: "string", format: "date", nullable: true },
       currently_issued_to_id: { type: "string", format: "uuid", nullable: true },
+      currently_issued_holder_id: {
+        type: "string",
+        format: "uuid",
+        nullable: true,
+      },
       location_id: { type: "string", format: "uuid" },
       legend_id: { type: "string", format: "uuid" },
       warranty_photo: { type: "string", format: "binary", nullable: true },
@@ -589,11 +618,12 @@ export const assetSchemas = {
     type: "object",
     properties: {
       asset_id: { type: "string", format: "uuid" },
-      to_user_id: { type: "string", format: "uuid" },
+      to_user_id: { type: "string", format: "uuid", nullable: true },
+      to_holder_id: { type: "string", format: "uuid", nullable: true },
       remarks: { type: "string" },
       location_id: { type: "string", format: "uuid", nullable: true },
     },
-    required: ["asset_id", "to_user_id"],
+    required: ["asset_id"],
   },
   PaginatedAssets: {
     type: "object",

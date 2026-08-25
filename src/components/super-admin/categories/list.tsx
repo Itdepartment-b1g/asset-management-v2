@@ -5,15 +5,16 @@ import {
   ClipboardCheck,
   MapPin,
   Palette,
+  UsersRound,
 } from "lucide-react";
 import { useState } from "react";
 
 import Tabs from "@/components/common/tabs";
 
-import ComingSoonPanel from "@/components/common/coming-soon-panel";
 import CategoryStats from "./card-views/category-stats";
 import LegendPanel from "./modules/legend-panel";
 import LocationPanel from "./modules/location-panel";
+import HolderPanel from "./modules/holder-panel";
 import DepartmentPanel from "./modules/department-panel";
 import ConditionPanel from "./modules/condition-panel";
 
@@ -40,6 +41,12 @@ export default function SuperAdminCategoriesList() {
             label: "Location",
             icon: <MapPin aria-hidden className="h-4 w-4" />,
             content: <LocationPanel />,
+          },
+          {
+            id: "holder",
+            label: "Shared Pools",
+            icon: <UsersRound aria-hidden className="h-4 w-4" />,
+            content: <HolderPanel />,
           },
           {
             id: "department",

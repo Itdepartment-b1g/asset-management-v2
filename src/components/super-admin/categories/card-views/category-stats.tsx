@@ -5,13 +5,19 @@ import {
   ClipboardCheck,
   MapPin,
   Palette,
+  UsersRound,
   type LucideIcon,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import StatCard from "@/components/common/stat-card";
 
-type CategoryStatId = "location" | "department" | "condition" | "legend";
+type CategoryStatId =
+  | "location"
+  | "holder"
+  | "department"
+  | "condition"
+  | "legend";
 
 type CategoryStatsProps = {
   /** Refetch totals when the active tab changes (e.g. after CRUD in a panel). */
@@ -27,6 +33,7 @@ type StatConfig = {
 
 const STATS: StatConfig[] = [
   { id: "location", label: "Locations", icon: MapPin, available: true },
+  { id: "holder", label: "Shared Pools", icon: UsersRound, available: true },
   {
     id: "department",
     label: "Departments",
@@ -44,6 +51,7 @@ const STATS: StatConfig[] = [
 
 type Totals = {
   location: number | null;
+  holder: number | null;
   department: number | null;
   legend: number | null;
   condition: number | null;
@@ -68,6 +76,7 @@ async function fetchTotal(endpoint: string): Promise<number> {
 export default function CategoryStats({ activeTab }: CategoryStatsProps) {
   const [totals, setTotals] = useState<Totals>({
     location: null,
+    holder: null,
     department: null,
     condition: null,
     legend: null,
@@ -75,6 +84,7 @@ export default function CategoryStats({ activeTab }: CategoryStatsProps) {
   const [initialLoading, setInitialLoading] = useState(true);
   const baselineRef = useRef<Totals>({
     location: null,
+    holder: null,
     department: null,
     condition: null,
     legend: null,
@@ -82,26 +92,33 @@ export default function CategoryStats({ activeTab }: CategoryStatsProps) {
 
   const loadTotals = useCallback(async () => {
     try {
-      const [location, department, legend, condition] = await Promise.all([
-        fetchTotal("/api/location"),
-        fetchTotal("/api/department"),
-        fetchTotal("/api/legend"),
-        fetchTotal("/api/condition"),
+      const [location, holder, department, legend, condition] =
+        await Promise.all([
+          fetchTotal("/api/location"),
+          fetchTotal("/api/holder"),
+          fetchTotal("/api/department"),
+          fetchTotal("/api/legend"),
+          fetchTotal("/api/condition"),
         ]);
-      setTotals({ location, department, legend, condition });
+      setTotals({ location, holder, department, legend, condition });
 
       if (baselineRef.current.location === null) {
-        baselineRef.current = { location, department, legend, condition };
+        baselineRef.current = {
+          location,
+          holder,
+          department,
+          legend,
+          condition,
+        };
       }
     } catch {
-      setTotals((current) =>
-        current.location === null &&
-          current.department === null &&
-          current.legend === null &&
-          current.condition === null
-          ? { location: null, department: null, legend: null, condition: current.condition }
-          : { location: null, department: null, legend: null, condition: current.condition },
-      );
+      setTotals({
+        location: null,
+        holder: null,
+        department: null,
+        legend: null,
+        condition: null,
+      });
     } finally {
       setInitialLoading(false);
     }
@@ -120,54 +137,31 @@ export default function CategoryStats({ activeTab }: CategoryStatsProps) {
     return () => window.removeEventListener("focus", onFocus);
   }, [loadTotals]);
 
+  function totalFor(id: CategoryStatId): number | null {
+    return totals[id];
+  }
+
+  function baselineFor(id: CategoryStatId): number | null {
+    return baselineRef.current[id];
+  }
+
   function valueFor(stat: StatConfig): string {
     if (!stat.available) return "0";
-
-    const total =
-      stat.id === "location"
-        ? totals.location
-        : stat.id === "department"
-          ? totals.department
-          : stat.id === "legend"
-            ? totals.legend
-            : stat.id === "condition"
-              ? totals.condition
-            : null;
-
+    const total = totalFor(stat.id);
     if (initialLoading && total === null) return "…";
     return total === null ? "—" : String(total);
   }
 
   function deltaFor(stat: StatConfig): number {
     if (!stat.available) return 0;
-
-    const total =
-      stat.id === "location"
-        ? totals.location
-        : stat.id === "department"
-          ? totals.department
-          : stat.id === "legend"
-            ? totals.legend
-            : stat.id === "condition"
-              ? totals.condition
-            : null;
-    const baseline =
-      stat.id === "location"
-        ? baselineRef.current.location
-        : stat.id === "department"
-          ? baselineRef.current.department
-          : stat.id === "legend"
-            ? baselineRef.current.legend
-            : stat.id === "condition"
-              ? baselineRef.current.condition
-            : null;
-
+    const total = totalFor(stat.id);
+    const baseline = baselineFor(stat.id);
     if (total === null || baseline === null) return 0;
     return total - baseline;
   }
 
   return (
-    <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
+    <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
       {STATS.map((stat) => (
         <StatCard
           key={stat.id}

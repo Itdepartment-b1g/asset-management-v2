@@ -26,6 +26,10 @@ export const tags = [
     description: "Manage asset locations",
   },
   {
+    name: "holder",
+    description: "Manage shared pools (non-user issued-to labels)",
+  },
+  {
     name: "department",
     description: "Manage asset departments",
   },

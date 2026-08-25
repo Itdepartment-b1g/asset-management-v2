@@ -1,6 +1,7 @@
 import { authPaths, authSchemas } from "./auth";
 import { legendPaths, legendSchemas } from "./legend";
 import { locationPaths, locationSchemas } from "./location";
+import { holderPaths, holderSchemas } from "./holder";
 import { departmentPaths, departmentSchemas } from "./department";
 import { conditionPaths, conditionSchemas } from "./condition";
 import { assetPaths, assetSchemas } from "./asset";
@@ -16,6 +17,7 @@ export const openApiDocument = {
     ...authPaths,
     ...legendPaths,
     ...locationPaths,
+    ...holderPaths,
     ...departmentPaths,
     ...conditionPaths,
     ...assetPaths,
@@ -26,6 +28,7 @@ export const openApiDocument = {
       ...authSchemas,
       ...legendSchemas,
       ...locationSchemas,
+      ...holderSchemas,
       ...departmentSchemas,
       ...conditionSchemas,
       ...assetSchemas,

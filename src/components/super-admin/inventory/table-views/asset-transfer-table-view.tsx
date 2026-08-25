@@ -3,24 +3,43 @@
 import type { TableColumn } from "@/components/common/table-view";
 import { formatDateTime } from "@/lib/format-date";
 
-import type { AssetLookup, AssetTransfer, AssetUser } from "./asset-table-view";
+import {
+  holder_label,
+  user_label,
+  type AssetLookup,
+  type AssetTransfer,
+} from "../lib/asset-types";
 
-export function user_label(user: AssetUser | null | undefined) {
-  if (!user) return "Unassigned";
-  return user.full_name || user.email || user.id;
-}
+export { user_label } from "../lib/asset-types";
 
 export function location_label(location: AssetLookup | null | undefined) {
   return location?.name || "—";
 }
 
 export function is_initial_assignment(transfer: AssetTransfer) {
-  return transfer.from_user === null && transfer.remarks === "Initial assignment";
+  return (
+    transfer.from_user === null &&
+    transfer.from_holder === null &&
+    transfer.remarks === "Initial assignment"
+  );
+}
+
+export function transfer_party_label(
+  user: AssetTransfer["from_user"] | AssetTransfer["to_user"],
+  holder: AssetTransfer["from_holder"] | AssetTransfer["to_holder"],
+) {
+  if (user) return user_label(user);
+  if (holder) return holder_label(holder);
+  return "Unassigned";
 }
 
 export function transfer_from_label(transfer: AssetTransfer) {
   if (is_initial_assignment(transfer)) return "—";
-  return user_label(transfer.from_user);
+  return transfer_party_label(transfer.from_user, transfer.from_holder);
+}
+
+export function transfer_to_label(transfer: AssetTransfer) {
+  return transfer_party_label(transfer.to_user, transfer.to_holder);
 }
 
 export function transfer_department_label(transfer: AssetTransfer) {
@@ -56,9 +75,9 @@ export function AssetTransferTableView(): TableColumn<AssetTransfer>[] {
     {
       key: "currently_issued_to",
       header: "Currently Issued To",
-      sortValue: (row) => user_label(row.to_user),
+      sortValue: (row) => transfer_to_label(row),
       render: (row) => (
-        <span className="text-zinc-700">{user_label(row.to_user)}</span>
+        <span className="text-zinc-700">{transfer_to_label(row)}</span>
       ),
     },
     {

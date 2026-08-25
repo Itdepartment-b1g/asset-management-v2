@@ -48,6 +48,7 @@ model user {
   created_assets      asset_information[] @relation("created_by")
   created_departments departments[]       @relation("created_by")
   created_locations   locations[]         @relation("created_by")
+  created_holders     holders[]           @relation("created_by")
   created_conditions  conditions[]        @relation("created_by")
   created_legend      legend[]            @relation("created_by")
 }
@@ -67,25 +68,27 @@ model asset_information {
   salvage_value          Float?
   warranty_end_date      DateTime?
   useful_life_end_date   DateTime?
-  original_issue_date    DateTime?
-  currently_issued_to_id String?
-  department_id          String?
-  location_id            String?
-  legend_id              String?
-  created_by_id          String?
-  created_at             DateTime               @default(now())
-  updated_at             DateTime               @updatedAt
+  original_issue_date       DateTime?
+  currently_issued_to_id    String?
+  currently_issued_holder_id String?
+  department_id             String?
+  location_id               String?
+  legend_id                 String?
+  created_by_id             String?
+  created_at                DateTime               @default(now())
+  updated_at                DateTime               @updatedAt
 
   photos      asset_photo[]
   transfers   asset_transfer[]
 
-  current_condition    conditions?  @relation("asset_current_condition", fields: [current_condition_id], references: [id], onDelete: SetNull)
-  condition_assignment conditions?  @relation("asset_condition_assignment", fields: [condition_assignment_id], references: [id], onDelete: SetNull)
-  department           departments? @relation("asset_department", fields: [department_id], references: [id], onDelete: SetNull)
-  location             locations?   @relation("asset_location", fields: [location_id], references: [id], onDelete: SetNull)
-  legend               legend?      @relation("asset_legend", fields: [legend_id], references: [id], onDelete: SetNull)
-  currently_issued_to  user?        @relation("current_issue", fields: [currently_issued_to_id], references: [id])
-  originally_issued_to user[] @relation("original_issue")
+  current_condition       conditions?  @relation("asset_current_condition", fields: [current_condition_id], references: [id], onDelete: SetNull)
+  condition_assignment    conditions?  @relation("asset_condition_assignment", fields: [condition_assignment_id], references: [id], onDelete: SetNull)
+  department              departments? @relation("asset_department", fields: [department_id], references: [id], onDelete: SetNull)
+  location                locations?   @relation("asset_location", fields: [location_id], references: [id], onDelete: SetNull)
+  legend                  legend?      @relation("asset_legend", fields: [legend_id], references: [id], onDelete: SetNull)
+  currently_issued_to     user?        @relation("current_issue", fields: [currently_issued_to_id], references: [id])
+  currently_issued_holder holders?     @relation("current_holder", fields: [currently_issued_holder_id], references: [id], onDelete: SetNull)
+  originally_issued_to    user[]       @relation("original_issue")
 
   created_by user? @relation("created_by", fields: [created_by_id], references: [id])
 }
@@ -110,7 +113,9 @@ model asset_transfer {
   id                 String   @id @default(uuid())
   asset_id           String
   from_user_id       String?
-  to_user_id         String
+  to_user_id         String?
+  from_holder_id     String?
+  to_holder_id       String?
   from_location_id   String?
   to_location_id     String?
   remarks            String?
@@ -119,7 +124,9 @@ model asset_transfer {
 
   asset           asset_information @relation(fields: [asset_id], references: [id], onDelete: Cascade)
   from_user       user?             @relation("transfer_from", fields: [from_user_id], references: [id], onDelete: SetNull)
-  to_user         user              @relation("transfer_to", fields: [to_user_id], references: [id], onDelete: Restrict)
+  to_user         user?             @relation("transfer_to", fields: [to_user_id], references: [id], onDelete: Restrict)
+  from_holder     holders?          @relation("transfer_from_holder", fields: [from_holder_id], references: [id], onDelete: SetNull)
+  to_holder       holders?          @relation("transfer_to_holder", fields: [to_holder_id], references: [id], onDelete: Restrict)
   transferred_by  user              @relation("transfer_actor", fields: [transferred_by_id], references: [id], onDelete: Restrict)
   from_location   locations?        @relation("transfer_from_location", fields: [from_location_id], references: [id], onDelete: SetNull)
   to_location     locations?        @relation("transfer_to_location", fields: [to_location_id], references: [id], onDelete: SetNull)
@@ -150,6 +157,19 @@ model locations {
   transfers_from asset_transfer[] @relation("transfer_from_location")
   transfers_to   asset_transfer[] @relation("transfer_to_location")
   created_by user? @relation("created_by", fields: [created_by_id], references: [id])
+}
+
+model holders {
+  id            String   @id @default(uuid())
+  name          String   @unique
+  created_by_id String?
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  assets         asset_information[] @relation("current_holder")
+  transfers_from asset_transfer[]    @relation("transfer_from_holder")
+  transfers_to   asset_transfer[]    @relation("transfer_to_holder")
+  created_by     user?               @relation("created_by", fields: [created_by_id], references: [id])
 }
 
 model conditions {

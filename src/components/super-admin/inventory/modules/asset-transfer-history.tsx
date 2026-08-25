@@ -11,6 +11,8 @@ import type { AssetTransfer } from "../table-views/asset-table-view";
 import {
   AssetTransferTableView,
   is_initial_assignment,
+  transfer_from_label,
+  transfer_to_label,
   user_label,
 } from "../table-views/asset-transfer-table-view";
 
@@ -126,11 +128,11 @@ export default function AssetTransferHistory({
             >
               {is_initial_assignment(transfer) ? (
                 <p className="text-zinc-800">
-                  Initial assignment to {user_label(transfer.to_user)}
+                  Initial assignment to {transfer_to_label(transfer)}
                 </p>
               ) : (
                 <p className="text-zinc-800">
-                  {user_label(transfer.from_user)} → {user_label(transfer.to_user)}
+                  {transfer_from_label(transfer)} → {transfer_to_label(transfer)}
                 </p>
               )}
               <p className="mt-0.5 text-xs text-zinc-500">

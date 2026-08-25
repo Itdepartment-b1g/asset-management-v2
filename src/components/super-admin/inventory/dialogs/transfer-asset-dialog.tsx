@@ -1,56 +1,104 @@
 "use client";
 
 import { ArrowRightLeft, X } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import Dropdown from "@/components/common/dropdown";
 
-import type {
-  AssetListItem,
-  AssetLookup,
-  AssetUser,
-} from "../table-views/asset-table-view";
+import {
+  issued_to_label,
+  type AssetListItem,
+  type AssetLookup,
+  type AssetUser,
+} from "../lib/asset-types";
+
+const input_class =
+  "rounded-lg border border-zinc-300 bg-violet-50 px-4 py-2.5 text-sm outline-none focus:border-violet-600 disabled:opacity-50";
+
+const DESTINATION_OTHER = "other";
 
 type TransferAssetDialogProps = {
   row: AssetListItem;
   users: AssetUser[];
+  holders: AssetLookup[];
   locations: AssetLookup[];
   loading: boolean;
   error: string | null;
   onSave: (values: {
     to_user_id: string;
+    to_holder_id: string;
+    other_holder_name: string;
     remarks: string;
     location_id: string;
   }) => void;
   onClose: () => void;
 };
 
-function user_label(user: AssetUser | null | undefined) {
-  if (!user) return "Unassigned";
-  return user.full_name || user.email || user.id;
+function encode_destination(kind: "user" | "holder", id: string) {
+  return `${kind}:${id}`;
+}
+
+function parse_destination(value: string | null): {
+  to_user_id: string;
+  to_holder_id: string;
+} {
+  if (!value) return { to_user_id: "", to_holder_id: "" };
+  if (value.startsWith("user:")) {
+    return { to_user_id: value.slice(5), to_holder_id: "" };
+  }
+  if (value.startsWith("holder:")) {
+    return { to_user_id: "", to_holder_id: value.slice(7) };
+  }
+  return { to_user_id: "", to_holder_id: "" };
 }
 
 export default function TransferAssetDialog({
   row,
   users,
+  holders,
   locations,
   loading,
   error,
   onSave,
   onClose,
 }: TransferAssetDialogProps) {
-  const [to_user_id, set_to_user_id] = useState<string | null>(null);
+  const [destination, set_destination] = useState<string | null>(null);
+  const [other_holder_name, set_other_holder_name] = useState("");
   const [location_id, set_location_id] = useState<string | null>(
     row.location?.id ?? null,
   );
   const [remarks, set_remarks] = useState("");
 
-  const recipient_options = users
-    .filter((user) => user.id !== row.currently_issued_to_id)
-    .map((user) => ({
-      value: user.id,
-      label: user_label(user),
-    }));
+  const recipient_options = useMemo(() => {
+    const user_options = users
+      .filter((user) => user.id !== row.currently_issued_to_id)
+      .map((user) => ({
+        value: encode_destination("user", user.id),
+        label: user.full_name || user.email || user.id,
+      }));
+
+    const holder_options = holders
+      .filter((holder) => holder.id !== row.currently_issued_holder_id)
+      .map((holder) => ({
+        value: encode_destination("holder", holder.id),
+        label: holder.name,
+      }));
+
+    return [
+      ...user_options,
+      ...holder_options,
+      { value: DESTINATION_OTHER, label: "Other…" },
+    ];
+  }, [
+    holders,
+    row.currently_issued_holder_id,
+    row.currently_issued_to_id,
+    users,
+  ]);
+
+  const can_submit =
+    destination !== null &&
+    (destination !== DESTINATION_OTHER || other_holder_name.trim().length > 0);
 
   return (
     <div
@@ -81,16 +129,21 @@ export default function TransferAssetDialog({
         <p className="mb-4 text-sm text-zinc-600">
           Transfer{" "}
           <span className="font-semibold text-zinc-900">{row.asset_name}</span>{" "}
-          ({row.code_name}) to another user.
+          ({row.code_name}) to another user or shared pool.
         </p>
 
         <form
           className="flex flex-col gap-4"
           onSubmit={(event) => {
             event.preventDefault();
-            if (!to_user_id) return;
+            if (!destination || !can_submit) return;
+            const parsed = parse_destination(destination);
             onSave({
-              to_user_id,
+              ...parsed,
+              other_holder_name:
+                destination === DESTINATION_OTHER
+                  ? other_holder_name.trim()
+                  : "",
               remarks,
               location_id: location_id ?? "",
             });
@@ -100,18 +153,14 @@ export default function TransferAssetDialog({
             <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
               Current holder
             </p>
-            <p className="mt-1 text-zinc-800">
-              {user_label(row.currently_issued_to)}
-            </p>
+            <p className="mt-1 text-zinc-800">{issued_to_label(row)}</p>
           </div>
 
           <div className="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm">
             <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
               Last location
             </p>
-            <p className="mt-1 text-zinc-800">
-              {row.location?.name || "—"}
-            </p>
+            <p className="mt-1 text-zinc-800">{row.location?.name || "—"}</p>
           </div>
 
           <label className="flex flex-col gap-1">
@@ -120,14 +169,27 @@ export default function TransferAssetDialog({
             </span>
             <Dropdown
               options={recipient_options}
-              value={to_user_id}
-              onChange={set_to_user_id}
-              placeholder={
-                recipient_options.length === 0
-                  ? "No other users available"
-                  : "Select a user"
-              }
+              value={destination}
+              onChange={(value) => {
+                set_destination(value);
+                if (value !== DESTINATION_OTHER) {
+                  set_other_holder_name("");
+                }
+              }}
+              placeholder="Select a user or other"
             />
+            {destination === DESTINATION_OTHER ? (
+              <input
+                value={other_holder_name}
+                onChange={(event) =>
+                  set_other_holder_name(event.target.value)
+                }
+                disabled={loading}
+                required
+                className={input_class}
+                placeholder="eg. Universal, Warehouse (S)"
+              />
+            ) : null}
           </label>
 
           <label className="flex flex-col gap-1">
@@ -156,7 +218,7 @@ export default function TransferAssetDialog({
               onChange={(event) => set_remarks(event.target.value)}
               disabled={loading}
               rows={3}
-              className="rounded-lg border border-zinc-300 bg-violet-50 px-4 py-2.5 text-sm outline-none focus:border-violet-600 disabled:opacity-50"
+              className={input_class}
               placeholder="Optional reason for transfer"
             />
           </label>
@@ -178,7 +240,7 @@ export default function TransferAssetDialog({
             </button>
             <button
               type="submit"
-              disabled={loading || !to_user_id}
+              disabled={loading || !can_submit}
               className="inline-flex items-center gap-2 rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-violet-800 disabled:opacity-50"
             >
               <ArrowRightLeft aria-hidden className="h-4 w-4" />

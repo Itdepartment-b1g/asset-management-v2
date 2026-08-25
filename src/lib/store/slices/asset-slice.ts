@@ -143,7 +143,8 @@ export const transferAsset = createAsyncThunk(
   "assets/transfer",
   async (input: {
     asset_id: string;
-    to_user_id: string;
+    to_user_id?: string | null;
+    to_holder_id?: string | null;
     remarks?: string;
     location_id?: string;
   }) => {
