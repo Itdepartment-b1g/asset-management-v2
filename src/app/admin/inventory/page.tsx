@@ -1,5 +1,5 @@
-import InventoryList from "@/components/inventory/list";
+import SuperAdminInventoryList from "@/components/super-admin/inventory/list";
 
 export default function AdminInventoryPage() {
-  return <InventoryList />;
+  return <SuperAdminInventoryList />;
 }

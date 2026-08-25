@@ -8,7 +8,7 @@ import { formatDate } from "@/lib/format-date";
 import {
   format_condition_label,
   format_status_label,
-} from "../lib/asset-options";
+} from "../../../lib/asset-options";
 
 export type AssetLookup = {
   id: string;

@@ -9,7 +9,7 @@ import {
   ASSET_STATUS_OPTIONS,
   example_asset_code_name,
   type AssetStatus,
-} from "../lib/asset-options";
+} from "../../../lib/asset-options";
 import type {
   AssetLegend,
   AssetLookup,

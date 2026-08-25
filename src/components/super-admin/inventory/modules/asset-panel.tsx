@@ -28,7 +28,7 @@ import AssetTransferHistory from "./asset-transfer-history";
 import {
   format_condition_label,
   format_status_label,
-} from "../lib/asset-options";
+} from "../../../lib/asset-options";
 import {
   AssetTableView,
   type AssetItem,
