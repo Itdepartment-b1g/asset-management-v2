@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { AsyncStatus } from "@/components/common/async-status";
@@ -53,7 +53,7 @@ export default function HolderPanel() {
   const [items, setItems] = useState<HolderItem[]>([]);
   const [meta, setMeta] = useState<PaginationMeta | null>(null);
 
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -114,16 +114,24 @@ export default function HolderPanel() {
     }
   }
 
+  const skip_search_reload = useRef(true);
+
   useEffect(() => {
+    void loadPage(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- load once when tab panel mounts
+  }, []);
+
+  useEffect(() => {
+    if (skip_search_reload.current) {
+      skip_search_reload.current = false;
+      return;
+    }
+
     const nextSearch = searchInput.trim();
-    const delay = nextSearch === searchQuery ? 0 : 150;
     const t = window.setTimeout(() => {
       setSearchQuery(nextSearch);
-      void loadPage(1, {
-        search: nextSearch,
-        manageLoading: nextSearch === searchQuery,
-      });
-    }, delay);
+      void loadPage(1, { search: nextSearch });
+    }, 150);
 
     return () => {
       window.clearTimeout(t);
