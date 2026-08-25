@@ -320,20 +320,39 @@ async function assert_optional_relations(input: CreateAssetInput) {
 export const assets_repository = {
   async list_assets(
     actor_id: string,
-    input?: PaginationInput & { search?: string },
+    input?: PaginationInput & { search?: string; status?: AssetStatus },
   ) {
     await assert_privileged_actor(actor_id);
     const { page, limit, skip, take } = parse_pagination(input);
     const search = input?.search?.trim();
-    const where = search
-      ? {
-          OR: [
-            { asset_name: { contains: search, mode: "insensitive" as const } },
-            { code_name: { contains: search, mode: "insensitive" as const } },
-            { serial_number: { contains: search, mode: "insensitive" as const } },
-          ],
-        }
-      : undefined;
+    const status = input?.status;
+    const where = {
+      ...(status ? { status } : {}),
+      ...(search
+        ? {
+            OR: [
+              {
+                asset_name: {
+                  contains: search,
+                  mode: "insensitive" as const,
+                },
+              },
+              {
+                code_name: {
+                  contains: search,
+                  mode: "insensitive" as const,
+                },
+              },
+              {
+                serial_number: {
+                  contains: search,
+                  mode: "insensitive" as const,
+                },
+              },
+            ],
+          }
+        : {}),
+    };
 
     return paginated_query({
       page,

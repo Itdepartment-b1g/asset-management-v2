@@ -18,17 +18,19 @@ import {
   transferAsset,
 } from "@/lib/store/slices/asset-slice";
 
+import {
+  format_condition_label,
+  format_status_label,
+  type AssetStatus,
+} from "../../../lib/asset-options";
+import CardStats, {
+  type AssetStatId,
+} from "../card-views/card-stats";
 import AddAssetDialog, {
   type CreateAssetValues,
 } from "../dialogs/add-asset-dialog";
 import DeleteAssetDialog from "../dialogs/delete-asset-dialog";
 import TransferAssetDialog from "../dialogs/transfer-asset-dialog";
-import AssetPhotoPreview from "./asset-photo-preview";
-import AssetTransferHistory from "./asset-transfer-history";
-import {
-  format_condition_label,
-  format_status_label,
-} from "../../../lib/asset-options";
 import {
   AssetTableView,
   type AssetItem,
@@ -37,6 +39,8 @@ import {
   type AssetLookup,
   type AssetUser,
 } from "../table-views/asset-table-view";
+import AssetPhotoPreview from "./asset-photo-preview";
+import AssetTransferHistory from "./asset-transfer-history";
 import { toast } from "sonner";
 
 type PaginatedAssets = {
@@ -50,7 +54,11 @@ type PaginatedUsers = {
 };
 
 const assetPageCache = new Map<string, PaginatedAssets>();
-const ASSET_CACHE_VERSION = "v3";
+const ASSET_CACHE_VERSION = "v4";
+
+function status_from_stat(id: AssetStatId): AssetStatus | null {
+  return id === "total" ? null : id;
+}
 
 const fetchOptions: RequestInit = {
   credentials: "include",
@@ -319,14 +327,24 @@ export default function AssetPanel() {
   const [lookupsLoading, setLookupsLoading] = useState(false);
   const [searchInput, setSearchInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [statsRefreshKey, setStatsRefreshKey] = useState(0);
+  const [selectedStat, setSelectedStat] = useState<AssetStatId>("total");
+  const [statusFilter, setStatusFilter] = useState<AssetStatus | null>(null);
 
   async function loadPage(
     pageToLoad: number,
-    opts?: { manageLoading?: boolean; limit?: number; search?: string },
+    opts?: {
+      manageLoading?: boolean;
+      limit?: number;
+      search?: string;
+      status?: AssetStatus | null;
+    },
   ) {
     const manageLoading = opts?.manageLoading ?? true;
     const limitToUse = opts?.limit ?? limit;
     const searchToUse = opts?.search ?? searchQuery;
+    const statusToUse =
+      opts?.status === undefined ? statusFilter : opts.status;
 
     if (manageLoading) {
       setLoading(true);
@@ -335,7 +353,7 @@ export default function AssetPanel() {
     }
 
     try {
-      const cacheKey = `/api/asset|${ASSET_CACHE_VERSION}|page=${pageToLoad}|limit=${limitToUse}|search=${searchToUse}`;
+      const cacheKey = `/api/asset|${ASSET_CACHE_VERSION}|page=${pageToLoad}|limit=${limitToUse}|search=${searchToUse}|status=${statusToUse ?? ""}`;
       const cached = assetPageCache.get(cacheKey);
       if (cached) {
         setItems(cached.data);
@@ -349,6 +367,9 @@ export default function AssetPanel() {
       params.set("limit", String(limitToUse));
       if (searchToUse) {
         params.set("search", searchToUse);
+      }
+      if (statusToUse) {
+        params.set("status", statusToUse);
       }
 
       const response = await fetch(`/api/asset?${params.toString()}`, {
@@ -366,6 +387,13 @@ export default function AssetPanel() {
     } finally {
       if (manageLoading) setLoading(false);
     }
+  }
+
+  function handleStatSelect(id: AssetStatId) {
+    const nextStatus = status_from_stat(id);
+    setSelectedStat(id);
+    setStatusFilter(nextStatus);
+    void loadPage(1, { status: nextStatus });
   }
 
   async function loadLookups() {
@@ -483,6 +511,7 @@ export default function AssetPanel() {
       const created = await dispatch(addAsset(form)).unwrap();
       assetPageCache.clear();
       await loadPage(page, { manageLoading: false });
+      setStatsRefreshKey((key) => key + 1);
       setCreating(false);
       toast.success(`Added ${created.asset_name} as ${created.code_name}`);
     } catch (e) {
@@ -529,6 +558,7 @@ export default function AssetPanel() {
       await dispatch(removeAsset(id)).unwrap();
       assetPageCache.clear();
       await loadPage(page, { manageLoading: false });
+      setStatsRefreshKey((key) => key + 1);
       setSuccess("Deleted");
     } catch (e) {
       setError(getThunkErrorMessage(e, "Failed to delete asset"));
@@ -539,6 +569,12 @@ export default function AssetPanel() {
 
   return (
     <section>
+      <CardStats
+        refreshKey={statsRefreshKey}
+        selectedId={selectedStat}
+        onSelect={handleStatSelect}
+      />
+
       <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <SearchInput
           value={searchInput}
@@ -580,7 +616,9 @@ export default function AssetPanel() {
         emptyMessage={
           searchQuery
             ? "No assets match your search."
-            : "No assets yet—use Add asset to create one."
+            : statusFilter
+              ? `No ${format_status_label(statusFilter).toLowerCase()} assets.`
+              : "No assets yet—use Add asset to create one."
         }
         renderExpanded={(row) => <AssetDetails assetId={row.id} />}
       />

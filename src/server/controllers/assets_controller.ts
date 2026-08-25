@@ -156,6 +156,7 @@ export const assets_controller = {
     const page_param = searchParams.get("page");
     const limit_param = searchParams.get("limit");
     const search = searchParams.get("search")?.trim() || undefined;
+    const status_param = searchParams.get("status")?.trim() || undefined;
     const page = page_param === null ? undefined : Number(page_param);
     const limit = limit_param === null ? undefined : Number(limit_param);
 
@@ -173,11 +174,19 @@ export const assets_controller = {
       );
     }
 
+    if (status_param !== undefined && !is_asset_status(status_param)) {
+      return NextResponse.json(
+        { error: "status must be active, inactive, or stored" },
+        { status: 400 },
+      );
+    }
+
     try {
       const result = await assets_repository.list_assets(auth_user.id, {
         page,
         limit,
         search,
+        status: status_param,
       });
       return NextResponse.json(result);
     } catch (error) {

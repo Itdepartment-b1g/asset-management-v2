@@ -7,6 +7,8 @@ export type StatCardProps = {
   /** Session or period change. Omit to hide the trend badge. */
   delta?: number;
   className?: string;
+  selected?: boolean;
+  onClick?: () => void;
 };
 
 function TrendBadge({ delta }: { delta: number }) {
@@ -39,11 +41,17 @@ export default function StatCard({
   value,
   delta,
   className = "",
+  selected = false,
+  onClick,
 }: StatCardProps) {
-  return (
-    <div
-      className={`relative overflow-hidden rounded-2xl bg-white p-5 shadow-sm ring-1 ring-zinc-100 ${className}`}
-    >
+  const baseClassName = `relative overflow-hidden rounded-2xl bg-white p-5 text-left shadow-sm ring-1 transition ${
+    selected
+      ? "ring-2 ring-violet-500"
+      : "ring-zinc-100 hover:ring-violet-200"
+  } ${onClick ? "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500" : ""} ${className}`;
+
+  const content = (
+    <>
       <Icon
         aria-hidden
         className="pointer-events-none absolute -bottom-3 -right-3 h-24 w-24 text-violet-200/70"
@@ -63,6 +71,21 @@ export default function StatCard({
         </p>
         <p className="mt-1 text-sm font-medium text-violet-600">{label}</p>
       </div>
-    </div>
+    </>
   );
+
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        aria-pressed={selected}
+        className={baseClassName}
+        onClick={onClick}
+      >
+        {content}
+      </button>
+    );
+  }
+
+  return <div className={baseClassName}>{content}</div>;
 }
