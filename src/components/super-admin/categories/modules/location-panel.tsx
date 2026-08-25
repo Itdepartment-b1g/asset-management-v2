@@ -22,6 +22,7 @@ import {
   LocationTableView,
   type LocationItem,
 } from "../table-views/location-table-view";
+import { toast } from "sonner";
 
 type PaginatedLocations = {
   data: LocationItem[];
@@ -147,7 +148,7 @@ export default function LocationPanel() {
       await dispatch(addLocation(name)).unwrap();
       locationPageCache.clear();
       await loadPage(page, { manageLoading: false });
-      setSuccess(`Added ${name}`);
+      toast.success(`Added ${name}`);
       setAddName("");
     } catch (e) {
       setError(getThunkErrorMessage(e, "Failed to add location"));
@@ -167,7 +168,7 @@ export default function LocationPanel() {
       await dispatch(editLocation({ id, name })).unwrap();
       locationPageCache.clear();
       await loadPage(page, { manageLoading: false });
-      setSuccess(`Updated ${name}`);
+      toast.success(`Updated ${name}`);
     } catch (e) {
       setError(getThunkErrorMessage(e, "Failed to update location"));
     } finally {
@@ -183,7 +184,7 @@ export default function LocationPanel() {
       await dispatch(removeLocation(id)).unwrap();
       locationPageCache.clear();
       await loadPage(page, { manageLoading: false });
-      setSuccess("Deleted");
+      toast.success("Deleted");
     } catch (e) {
       setError(getThunkErrorMessage(e, "Failed to delete location"));
     } finally {

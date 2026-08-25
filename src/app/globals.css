@@ -32,3 +32,7 @@ button {
 button:disabled {
   cursor: not-allowed;
 }
+
+[data-sonner-toast][data-styled="true"] [data-content] {
+  flex: none;
+}

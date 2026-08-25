@@ -22,6 +22,7 @@ import {
   LegendTableView,
   type LegendItem,
 } from "../table-views/legend-table-view";
+import { toast } from "sonner";
 
 type PaginatedLegends = {
   data: LegendItem[];
@@ -149,7 +150,7 @@ export default function LegendPanel() {
       await dispatch(addLegend({ name, color })).unwrap();
       legendPageCache.clear();
       await loadPage(page, { manageLoading: false });
-      setSuccess(`Added ${name}`);
+      toast.success(`Added ${name}`);
       setAddName("");
     } catch (e) {
       setError(getThunkErrorMessage(e, "Failed to add legend"));
@@ -172,7 +173,7 @@ export default function LegendPanel() {
       ).unwrap();
       legendPageCache.clear();
       await loadPage(page, { manageLoading: false });
-      setSuccess(`Updated ${nextName}`);
+      toast.success(`Updated ${nextName}`);
     } catch (e) {
       setError(getThunkErrorMessage(e, "Failed to update legend"));
     } finally {
@@ -188,7 +189,7 @@ export default function LegendPanel() {
       await dispatch(deleteLegend(id)).unwrap();
       legendPageCache.clear();
       await loadPage(page, { manageLoading: false });
-      setSuccess("Deleted");
+      toast.success("Deleted");
     } catch (e) {
       setError(getThunkErrorMessage(e, "Failed to delete legend"));
     } finally {

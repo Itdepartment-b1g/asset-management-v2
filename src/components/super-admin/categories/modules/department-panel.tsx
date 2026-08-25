@@ -23,7 +23,7 @@ import {
 } from "../table-views/department-table-view";
 import DeleteDepartmentDialog from "../dialogs/delete-department-dialog";
 import EditDepartmentDialog from "../dialogs/edit-department-dialog";
-
+import { toast } from "sonner";
 
 type PaginatedDepartments = {
   data: DepartmentItem[];
@@ -151,7 +151,7 @@ export default function DepartmentPanel() {
       await dispatch(addDepartment(name)).unwrap();
       departmentPageCache.clear();
       await loadPage(page, { manageLoading: false });
-      setSuccess(`Added ${name}`);
+      toast.success(`Added ${name}`);
       setAddName("");
     } catch (e) {
       setError(getThunkErrorMessage(e, "Failed to add department"));
@@ -171,7 +171,7 @@ export default function DepartmentPanel() {
       await dispatch(editDepartment({ id, name })).unwrap();
       departmentPageCache.clear();
       await loadPage(page, { manageLoading: false });
-      setSuccess(`Updated ${name}`);
+      toast.success(`Updated ${name}`);
     } catch (e) {
       setError(getThunkErrorMessage(e, "Failed to update department"));
     } finally {
@@ -187,7 +187,7 @@ export default function DepartmentPanel() {
       await dispatch(removeDepartment(id)).unwrap();
       departmentPageCache.clear();
       await loadPage(page, { manageLoading: false });
-      setSuccess("Deleted");
+      toast.success("Deleted");
     } catch (e) {
       setError(getThunkErrorMessage(e, "Failed to delete department"));
     } finally {
@@ -216,13 +216,13 @@ export default function DepartmentPanel() {
               onChange={(e) => setAddName(e.target.value)}
               disabled={loading}
               required
-              minLength={3}
+              minLength={2}
               maxLength={255}
               className="rounded-lg border border-zinc-300 bg-violet-50 px-4 py-2.5 text-sm outline-none focus:border-violet-600 disabled:opacity-50"
               placeholder="Add department"
             />
             <span className="text-xs text-zinc-500">
-              Use 3–255 characters: letters, numbers, and spaces only.
+              Use 2–255 characters: letters, numbers, and spaces only.
             </span>
           </label>
           <button

@@ -9,7 +9,7 @@ import Pagination, {
 } from "@/components/common/pagination";
 import SearchInput from "@/components/common/search-input";
 import TableView from "@/components/common/table-view";
-import { formatDate, formatDateTime } from "@/lib/format-date";
+import { formatDate } from "@/lib/format-date";
 import { getThunkErrorMessage } from "@/lib/store/error";
 import { useAppDispatch } from "@/lib/store/hooks";
 import {
@@ -24,6 +24,7 @@ import AddAssetDialog, {
 import DeleteAssetDialog from "../dialogs/delete-asset-dialog";
 import TransferAssetDialog from "../dialogs/transfer-asset-dialog";
 import AssetPhotoPreview from "./asset-photo-preview";
+import AssetTransferHistory from "./asset-transfer-history";
 import {
   format_condition_label,
   format_status_label,
@@ -36,6 +37,7 @@ import {
   type AssetLookup,
   type AssetUser,
 } from "../table-views/asset-table-view";
+import { toast } from "sonner";
 
 type PaginatedAssets = {
   data: AssetListItem[];
@@ -105,10 +107,13 @@ function AssetDetails({ assetId }: { assetId: string }) {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch(`/api/asset?id=${encodeURIComponent(assetId)}`, {
-          ...fetchOptions,
-          cache: "no-store",
-        });
+        const response = await fetch(
+          `/api/asset?id=${encodeURIComponent(assetId)}`,
+          {
+            ...fetchOptions,
+            cache: "no-store",
+          },
+        );
         const payload = await parseResponse<AssetItem>(response);
         if (!cancelled) {
           setDetail(payload);
@@ -131,9 +136,7 @@ function AssetDetails({ assetId }: { assetId: string }) {
   }, [assetId]);
 
   if (loading) {
-    return (
-      <p className="text-sm text-zinc-500">Loading asset details...</p>
-    );
+    return <p className="text-sm text-zinc-500">Loading asset details...</p>;
   }
 
   if (error || !detail) {
@@ -186,9 +189,7 @@ function AssetDetails({ assetId }: { assetId: string }) {
         <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
           Location
         </p>
-        <p className="mt-1 text-zinc-800">
-          {row.location?.name || "—"}
-        </p>
+        <p className="mt-1 text-zinc-800">{row.location?.name || "—"}</p>
       </div>
       <div>
         <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
@@ -250,74 +251,47 @@ function AssetDetails({ assetId }: { assetId: string }) {
           {row.remarks || "—"}
         </p>
       </div>
-      <div>
-        <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-          Current holder
-        </p>
-        <p className="mt-1 text-zinc-800">
-          {user_label(row.currently_issued_to)}
-        </p>
+      <div className="col-span-full grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div>
+          <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+            Current holder
+          </p>
+          <p className="mt-1 text-zinc-800">
+            {user_label(row.currently_issued_to)}
+          </p>
+        </div>
+        <div>
+          <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+            Previous holder
+          </p>
+          <p className="mt-1 text-zinc-800">
+            {previous_holder ? user_label(previous_holder) : "—"}
+          </p>
+        </div>
       </div>
-      <div>
-        <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-          Previous holder
-        </p>
-        <p className="mt-1 text-zinc-800">
-          {previous_holder ? user_label(previous_holder) : "—"}
-        </p>
-      </div>
-      <div className="sm:col-span-2 lg:col-span-3">
-        <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-          Transfer history
-        </p>
-        {transfers.length === 0 ? (
-          <p className="mt-1 text-zinc-800">No transfers yet.</p>
+      <div className="col-span-full grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {warranty ? (
+          <AssetPhotoPreview label="Warranty photo" photo={warranty} />
         ) : (
-          <ol className="mt-2 space-y-2">
-            {transfers.map((transfer) => (
-              <li
-                key={transfer.id}
-                className="rounded-lg border border-zinc-200 bg-white px-3 py-2"
-              >
-                {transfer.from_user === null && transfer.remarks === "Initial assignment" ? (
-                  <p className="text-zinc-800">Initial assignment to {user_label(transfer.to_user)}</p>
-                ) : (
-                  <p className="text-zinc-800">
-                    {user_label(transfer.from_user)} → {user_label(transfer.to_user)}
-                  </p>
-                )}
-                <p className="mt-0.5 text-xs text-zinc-500">
-                  {formatDateTime(transfer.transferred_at)} · by{" "}
-                  {user_label(transfer.transferred_by)}
-                  {transfer.remarks && transfer.remarks !== "Initial assignment"
-                    ? ` · ${transfer.remarks}`
-                    : ""}
-                </p>
-              </li>
-            ))}
-          </ol>
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+              Warranty photo
+            </p>
+            <p className="mt-1 text-zinc-800">—</p>
+          </div>
+        )}
+        {receipt ? (
+          <AssetPhotoPreview label="Receipt photo" photo={receipt} />
+        ) : (
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+              Receipt photo
+            </p>
+            <p className="mt-1 text-zinc-800">—</p>
+          </div>
         )}
       </div>
-      {warranty ? (
-        <AssetPhotoPreview label="Warranty photo" photo={warranty} />
-      ) : (
-        <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-            Warranty photo
-          </p>
-          <p className="mt-1 text-zinc-800">—</p>
-        </div>
-      )}
-      {receipt ? (
-        <AssetPhotoPreview label="Receipt photo" photo={receipt} />
-      ) : (
-        <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-            Receipt photo
-          </p>
-          <p className="mt-1 text-zinc-800">—</p>
-        </div>
-      )}
+      <AssetTransferHistory transfers={transfers} />
     </div>
   );
 }
@@ -510,11 +484,12 @@ export default function AssetPanel() {
       assetPageCache.clear();
       await loadPage(page, { manageLoading: false });
       setCreating(false);
-      setSuccess(`Added ${created.asset_name} as ${created.code_name}`);
+      toast.success(`Added ${created.asset_name} as ${created.code_name}`);
     } catch (e) {
       setError(getThunkErrorMessage(e, "Failed to add asset"));
     } finally {
-      setLoading(false);
+      toast.dismiss();
+      toast.error(error);
     }
   }
 
@@ -536,7 +511,7 @@ export default function AssetPanel() {
       assetPageCache.clear();
       await loadPage(page, { manageLoading: false });
       setTransferring(null);
-      setSuccess(
+      toast.success(
         `Transferred ${updated.asset_name} to ${user_label(updated.currently_issued_to)}`,
       );
     } catch (e) {

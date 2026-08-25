@@ -23,7 +23,7 @@ import {
     } from "../table-views/condition-table-view";
 import DeleteConditionDialog from "@/components/super-admin/categories/dialogs/delete-condition-dialog";
 import EditConditionDialog from "@/components/super-admin/categories/dialogs/edit-condition-dialog";
-
+import { toast } from "sonner";
 
 type PaginatedConditions = {
   data: ConditionItem[];
@@ -151,7 +151,7 @@ export default function ConditionPanel() {
       await dispatch(addCondition(name)).unwrap();
       conditionPageCache.clear();
       await loadPage(page, { manageLoading: false });
-      setSuccess(`Added ${name}`);
+      toast.success(`Added ${name}`);
       setAddName("");
     } catch (e) {
       setError(getThunkErrorMessage(e, "Failed to add condition"));
@@ -171,7 +171,7 @@ export default function ConditionPanel() {
       await dispatch(editCondition({ id, name })).unwrap();
       conditionPageCache.clear();
       await loadPage(page, { manageLoading: false });
-      setSuccess(`Updated ${name}`);
+      toast.success(`Updated ${name}`);
     } catch (e) {
       setError(getThunkErrorMessage(e, "Failed to update condition"));
     } finally {
@@ -187,7 +187,7 @@ export default function ConditionPanel() {
       await dispatch(removeCondition(id)).unwrap();
       conditionPageCache.clear();
       await loadPage(page, { manageLoading: false });
-      setSuccess("Deleted");
+      toast.success("Deleted");
     } catch (e) {
       setError(getThunkErrorMessage(e, "Failed to delete condition"));
     } finally {

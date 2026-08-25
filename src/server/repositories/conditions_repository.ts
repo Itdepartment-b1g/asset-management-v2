@@ -35,8 +35,8 @@ async function assert_privileged_actor(actor_id: string){
 }
 function validate_name(name: string){
     const trimmed_name = name.trim();
-    if (trimmed_name.length < 3 || trimmed_name.length > 255) {
-        throw new ValidationError("Name must be between 3 and 255 characters");
+    if (trimmed_name.length < 2 || trimmed_name.length > 255) {
+        throw new ValidationError("Name must be between 2 and 255 characters");
     }
     if (!/^[a-zA-Z0-9\s]+$/.test(trimmed_name)) {
         throw new ValidationError("Name must contain only letters, numbers and spaces");
