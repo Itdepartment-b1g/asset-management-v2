@@ -48,6 +48,7 @@ import {
   type AssetLookup,
   type AssetUser,
 } from "../lib/asset-types";
+import { recordRecentOtherHolder } from "../lib/recent-other-holders";
 import {
   AssetTableView,
 } from "../table-views/asset-table-view";
@@ -475,6 +476,7 @@ export default function AssetPanel() {
             ...current,
           ];
         });
+        recordRecentOtherHolder(values.other_holder_name);
       }
 
       const form = new FormData();
@@ -604,6 +606,7 @@ export default function AssetPanel() {
             ...current,
           ];
         });
+        recordRecentOtherHolder(values.other_holder_name);
       }
 
       const updated = await dispatch(

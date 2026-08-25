@@ -10,6 +10,7 @@ import {
   example_asset_code_name,
   type AssetStatus,
 } from "../../../lib/asset-options";
+import OtherHolderRecent from "../modules/other-holder-recent";
 import type {
   AssetLegend,
   AssetLookup,
@@ -364,10 +365,6 @@ export default function AddAssetDialog({
                       value: encode_issued_to("user", user.id),
                       label: user_label(user),
                     })),
-                    ...holders.map((holder) => ({
-                      value: encode_issued_to("holder", holder.id),
-                      label: holder.name,
-                    })),
                     { value: ISSUED_TO_OTHER, label: "Other…" },
                   ]}
                   value={issued_to ?? ""}
@@ -382,16 +379,23 @@ export default function AddAssetDialog({
                   }
                 />
                 {issued_to === ISSUED_TO_OTHER ? (
-                  <input
-                    value={other_holder_name}
-                    onChange={(event) =>
-                      set_other_holder_name(event.target.value)
-                    }
-                    disabled={loading}
-                    required
-                    className={input_class}
-                    placeholder="eg. Universal, Warehouse (S)"
-                  />
+                  <>
+                    <input
+                      value={other_holder_name}
+                      onChange={(event) =>
+                        set_other_holder_name(event.target.value)
+                      }
+                      disabled={loading}
+                      required
+                      className={input_class}
+                      placeholder="eg. Universal, Warehouse (S)"
+                    />
+                    <OtherHolderRecent
+                      holders={holders}
+                      disabled={loading}
+                      onSelect={set_other_holder_name}
+                    />
+                  </>
                 ) : null}
               </label>
 

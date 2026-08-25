@@ -11,6 +11,7 @@ import {
   type AssetLookup,
   type AssetUser,
 } from "../lib/asset-types";
+import OtherHolderRecent from "../modules/other-holder-recent";
 
 const input_class =
   "rounded-lg border border-zinc-300 bg-violet-50 px-4 py-2.5 text-sm outline-none focus:border-violet-600 disabled:opacity-50";
@@ -77,24 +78,8 @@ export default function TransferAssetDialog({
         label: user.full_name || user.email || user.id,
       }));
 
-    const holder_options = holders
-      .filter((holder) => holder.id !== row.currently_issued_holder_id)
-      .map((holder) => ({
-        value: encode_destination("holder", holder.id),
-        label: holder.name,
-      }));
-
-    return [
-      ...user_options,
-      ...holder_options,
-      { value: DESTINATION_OTHER, label: "Other…" },
-    ];
-  }, [
-    holders,
-    row.currently_issued_holder_id,
-    row.currently_issued_to_id,
-    users,
-  ]);
+    return [...user_options, { value: DESTINATION_OTHER, label: "Other…" }];
+  }, [row.currently_issued_to_id, users]);
 
   const can_submit =
     destination !== null &&
@@ -179,16 +164,25 @@ export default function TransferAssetDialog({
               placeholder="Select a user or other"
             />
             {destination === DESTINATION_OTHER ? (
-              <input
-                value={other_holder_name}
-                onChange={(event) =>
-                  set_other_holder_name(event.target.value)
-                }
-                disabled={loading}
-                required
-                className={input_class}
-                placeholder="eg. Universal, Warehouse (S)"
-              />
+              <>
+                <input
+                  value={other_holder_name}
+                  onChange={(event) =>
+                    set_other_holder_name(event.target.value)
+                  }
+                  disabled={loading}
+                  required
+                  className={input_class}
+                  placeholder="eg. Universal, Warehouse (S)"
+                />
+                <OtherHolderRecent
+                  holders={holders.filter(
+                    (holder) => holder.id !== row.currently_issued_holder_id,
+                  )}
+                  disabled={loading}
+                  onSelect={set_other_holder_name}
+                />
+              </>
             ) : null}
           </label>
 
