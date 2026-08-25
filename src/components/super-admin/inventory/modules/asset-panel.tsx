@@ -474,7 +474,7 @@ export default function AssetPanel() {
 
   async function handleTransferAsset(
     id: string,
-    values: { to_user_id: string; remarks: string },
+    values: { to_user_id: string; remarks: string; location_id: string },
   ) {
     setLoading(true);
     setError(null);
@@ -485,6 +485,7 @@ export default function AssetPanel() {
           asset_id: id,
           to_user_id: values.to_user_id,
           remarks: values.remarks.trim() || undefined,
+          location_id: values.location_id.trim() || undefined,
         }),
       ).unwrap();
       clearAssetPageCache();
@@ -610,6 +611,7 @@ export default function AssetPanel() {
           key={transferring.id}
           row={transferring}
           users={users}
+          locations={locations}
           loading={loading}
           error={error}
           onSave={(values) => {

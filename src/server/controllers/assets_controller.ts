@@ -253,6 +253,7 @@ export const assets_controller = {
     asset_id?: string;
     to_user_id?: string;
     remarks?: string | null;
+    location_id?: string | null;
   }) {
     const auth_user = await requireAuthUser();
     if (auth_user instanceof NextResponse) {
@@ -277,6 +278,7 @@ export const assets_controller = {
     const input: TransferAssetInput = {
       to_user_id,
       remarks: body.remarks ?? null,
+      location_id: body.location_id?.trim() || null,
     };
 
     try {

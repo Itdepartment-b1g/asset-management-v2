@@ -5,14 +5,23 @@ import { useState } from "react";
 
 import Dropdown from "@/components/common/dropdown";
 
-import type { AssetListItem, AssetUser } from "../table-views/asset-table-view";
+import type {
+  AssetListItem,
+  AssetLookup,
+  AssetUser,
+} from "../table-views/asset-table-view";
 
 type TransferAssetDialogProps = {
   row: AssetListItem;
   users: AssetUser[];
+  locations: AssetLookup[];
   loading: boolean;
   error: string | null;
-  onSave: (values: { to_user_id: string; remarks: string }) => void;
+  onSave: (values: {
+    to_user_id: string;
+    remarks: string;
+    location_id: string;
+  }) => void;
   onClose: () => void;
 };
 
@@ -24,12 +33,16 @@ function user_label(user: AssetUser | null | undefined) {
 export default function TransferAssetDialog({
   row,
   users,
+  locations,
   loading,
   error,
   onSave,
   onClose,
 }: TransferAssetDialogProps) {
   const [to_user_id, set_to_user_id] = useState<string | null>(null);
+  const [location_id, set_location_id] = useState<string | null>(
+    row.location?.id ?? null,
+  );
   const [remarks, set_remarks] = useState("");
 
   const recipient_options = users
@@ -76,7 +89,11 @@ export default function TransferAssetDialog({
           onSubmit={(event) => {
             event.preventDefault();
             if (!to_user_id) return;
-            onSave({ to_user_id, remarks });
+            onSave({
+              to_user_id,
+              remarks,
+              location_id: location_id ?? "",
+            });
           }}
         >
           <div className="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm">
@@ -85,6 +102,15 @@ export default function TransferAssetDialog({
             </p>
             <p className="mt-1 text-zinc-800">
               {user_label(row.currently_issued_to)}
+            </p>
+          </div>
+
+          <div className="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm">
+            <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+              Last location
+            </p>
+            <p className="mt-1 text-zinc-800">
+              {row.location?.name || "—"}
             </p>
           </div>
 
@@ -100,6 +126,25 @@ export default function TransferAssetDialog({
                 recipient_options.length === 0
                   ? "No other users available"
                   : "Select a user"
+              }
+            />
+          </label>
+
+          <label className="flex flex-col gap-1">
+            <span className="text-sm font-medium text-zinc-700">
+              New location
+            </span>
+            <Dropdown
+              options={locations.map((location) => ({
+                value: location.id,
+                label: location.name,
+              }))}
+              value={location_id}
+              onChange={set_location_id}
+              placeholder={
+                locations.length === 0
+                  ? "No locations yet"
+                  : "Select a location"
               }
             />
           </label>

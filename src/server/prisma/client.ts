@@ -5,7 +5,7 @@ import { PrismaClient } from "@/generated/prisma/client";
 
 // Bump this when user/model relations change so HMR does not reuse a stale client.
 const PRISMA_SCHEMA_STAMP =
-  "asset_information.direct_relations+condition_ids+asset_photo+asset_transfer";
+  "asset_information.direct_relations+condition_ids+asset_photo+asset_transfer+transfer_locations";
 
 const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;

@@ -9,6 +9,7 @@ type TransferBody = {
   asset_id?: string;
   to_user_id?: string;
   remarks?: string | null;
+  location_id?: string | null;
 };
 
 export async function POST(request: Request) {

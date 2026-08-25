@@ -111,6 +111,8 @@ model asset_transfer {
   asset_id           String
   from_user_id       String?
   to_user_id         String
+  from_location_id   String?
+  to_location_id     String?
   remarks            String?
   transferred_by_id  String
   transferred_at     DateTime @default(now())
@@ -119,6 +121,8 @@ model asset_transfer {
   from_user       user?             @relation("transfer_from", fields: [from_user_id], references: [id], onDelete: SetNull)
   to_user         user              @relation("transfer_to", fields: [to_user_id], references: [id], onDelete: Restrict)
   transferred_by  user              @relation("transfer_actor", fields: [transferred_by_id], references: [id], onDelete: Restrict)
+  from_location   locations?        @relation("transfer_from_location", fields: [from_location_id], references: [id], onDelete: SetNull)
+  to_location     locations?        @relation("transfer_to_location", fields: [to_location_id], references: [id], onDelete: SetNull)
 
   @@index([asset_id, transferred_at])
 }
@@ -143,6 +147,8 @@ model locations {
   updated_at DateTime @updatedAt
 
   assets asset_information[] @relation("asset_location")
+  transfers_from asset_transfer[] @relation("transfer_from_location")
+  transfers_to   asset_transfer[] @relation("transfer_to_location")
   created_by user? @relation("created_by", fields: [created_by_id], references: [id])
 }
 

@@ -20,12 +20,16 @@ export type AssetTransfer = {
   id: string;
   from_user_id: string | null;
   to_user_id: string;
+  from_location_id: string | null;
+  to_location_id: string | null;
   remarks: string | null;
   transferred_by_id: string;
   transferred_at: string;
   from_user: AssetUser | null;
   to_user: AssetUser;
   transferred_by: AssetUser;
+  from_location: AssetLookup | null;
+  to_location: AssetLookup | null;
 };
 
 export type AssetPhotoMeta = {

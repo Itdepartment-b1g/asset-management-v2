@@ -139,6 +139,9 @@ export default function AssetTransferHistory({
                 {transfer.to_user?.department?.name
                   ? ` · ${transfer.to_user.department.name}`
                   : ""}
+                {transfer.to_location?.name
+                  ? ` · ${transfer.to_location.name}`
+                  : ""}
                 {transfer.remarks && transfer.remarks !== "Initial assignment"
                   ? ` · ${transfer.remarks}`
                   : ""}

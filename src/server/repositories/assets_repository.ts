@@ -53,6 +53,7 @@ export type CreateAssetInput = {
 export type TransferAssetInput = {
   to_user_id: string;
   remarks?: string | null;
+  location_id?: string | null;
 };
 
 export class AssetForbiddenError extends Error {
@@ -113,6 +114,11 @@ const asset_table_select = {
   },
 } as const;
 
+const lookup_preview_select = {
+  id: true,
+  name: true,
+} as const;
+
 const asset_detail_include = {
   current_condition: { select: { id: true, name: true } },
   condition_assignment: { select: { id: true, name: true } },
@@ -141,6 +147,8 @@ const asset_detail_include = {
       from_user: { select: issued_to_select },
       to_user: { select: issued_to_select },
       transferred_by: { select: user_preview_select },
+      from_location: { select: lookup_preview_select },
+      to_location: { select: lookup_preview_select },
     },
   },
 } as const;
@@ -409,6 +417,7 @@ export const assets_repository = {
     const vendor_name = validate_optional_text(input.vendor_name, "Vendor name");
 
     const currently_issued_to_id = input.currently_issued_to_id ?? null;
+    const location_id = input.location_id ?? null;
     const optional_fields = {
       warranty_end_date: input.warranty_end_date ?? null,
       useful_life_end_date: input.useful_life_end_date ?? null,
@@ -421,6 +430,8 @@ export const assets_repository = {
         ? {
             create: {
               to_user_id: currently_issued_to_id,
+              from_location_id: null,
+              to_location_id: location_id,
               remarks: "Initial assignment",
               transferred_by_id: actor_id,
             },
@@ -459,7 +470,7 @@ export const assets_repository = {
               cost_value: input.cost_value ?? null,
               salvage_value: input.salvage_value ?? null,
               created_by_id: actor_id,
-              location_id: input.location_id ?? null,
+              location_id,
               legend_id: input.legend_id ?? null,
               ...optional_fields,
             },
@@ -503,6 +514,7 @@ export const assets_repository = {
     }
 
     const remarks = validate_optional_text(input.remarks, "Remarks");
+    const location_id = input.location_id?.trim() || null;
 
     const to_user = await prisma.user.findUnique({
       where: { id: to_user_id },
@@ -510,6 +522,16 @@ export const assets_repository = {
     });
     if (!to_user) {
       throw new ValidationError("Transfer recipient not found");
+    }
+
+    if (location_id) {
+      const location = await prisma.locations.findUnique({
+        where: { id: location_id },
+        select: { id: true },
+      });
+      if (!location) {
+        throw new ValidationError("Location not found");
+      }
     }
 
     return prisma.$transaction(async (tx) => {
@@ -526,11 +548,16 @@ export const assets_repository = {
         throw new ValidationError("Asset is already issued to this user");
       }
 
+      const from_location_id = asset.location_id;
+      const to_location_id = location_id ?? asset.location_id;
+
       await tx.asset_transfer.create({
         data: {
           asset_id,
           from_user_id: asset.currently_issued_to_id,
           to_user_id,
+          from_location_id,
+          to_location_id,
           remarks,
           transferred_by_id: actor_id,
         },
@@ -540,6 +567,7 @@ export const assets_repository = {
         where: { id: asset_id },
         data: {
           currently_issued_to_id: to_user_id,
+          ...(location_id ? { location_id } : {}),
           original_issue_date: asset.original_issue_date ?? new Date(),
           originally_issued_to:
             asset.originally_issued_to.length === 0

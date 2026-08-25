@@ -417,6 +417,8 @@ export const assetSchemas = {
       id: { type: "string", format: "uuid" },
       from_user_id: { type: "string", format: "uuid", nullable: true },
       to_user_id: { type: "string", format: "uuid" },
+      from_location_id: { type: "string", format: "uuid", nullable: true },
+      to_location_id: { type: "string", format: "uuid", nullable: true },
       remarks: { type: "string", nullable: true },
       transferred_by_id: { type: "string", format: "uuid" },
       transferred_at: { type: "string", format: "date-time" },
@@ -426,6 +428,14 @@ export const assetSchemas = {
       },
       to_user: { $ref: "#/components/schemas/AssetUserPreview" },
       transferred_by: { $ref: "#/components/schemas/AssetUserPreview" },
+      from_location: {
+        allOf: [{ $ref: "#/components/schemas/AssetLookup" }],
+        nullable: true,
+      },
+      to_location: {
+        allOf: [{ $ref: "#/components/schemas/AssetLookup" }],
+        nullable: true,
+      },
     },
     required: [
       "id",
@@ -581,6 +591,7 @@ export const assetSchemas = {
       asset_id: { type: "string", format: "uuid" },
       to_user_id: { type: "string", format: "uuid" },
       remarks: { type: "string" },
+      location_id: { type: "string", format: "uuid", nullable: true },
     },
     required: ["asset_id", "to_user_id"],
   },

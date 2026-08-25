@@ -3,11 +3,15 @@
 import type { TableColumn } from "@/components/common/table-view";
 import { formatDateTime } from "@/lib/format-date";
 
-import type { AssetTransfer, AssetUser } from "./asset-table-view";
+import type { AssetLookup, AssetTransfer, AssetUser } from "./asset-table-view";
 
 export function user_label(user: AssetUser | null | undefined) {
   if (!user) return "Unassigned";
   return user.full_name || user.email || user.id;
+}
+
+export function location_label(location: AssetLookup | null | undefined) {
+  return location?.name || "—";
 }
 
 export function is_initial_assignment(transfer: AssetTransfer) {
@@ -21,6 +25,15 @@ export function transfer_from_label(transfer: AssetTransfer) {
 
 export function transfer_department_label(transfer: AssetTransfer) {
   return transfer.to_user?.department?.name || "—";
+}
+
+export function transfer_last_location_label(transfer: AssetTransfer) {
+  if (is_initial_assignment(transfer)) return "—";
+  return location_label(transfer.from_location);
+}
+
+export function transfer_current_location_label(transfer: AssetTransfer) {
+  return location_label(transfer.to_location);
 }
 
 export function transfer_remarks(transfer: AssetTransfer) {
@@ -54,6 +67,24 @@ export function AssetTransferTableView(): TableColumn<AssetTransfer>[] {
       sortValue: (row) => transfer_department_label(row),
       render: (row) => (
         <span className="text-zinc-600">{transfer_department_label(row)}</span>
+      ),
+    },
+    {
+      key: "last_location",
+      header: "Last Location",
+      sortValue: (row) => transfer_last_location_label(row),
+      render: (row) => (
+        <span className="text-zinc-600">{transfer_last_location_label(row)}</span>
+      ),
+    },
+    {
+      key: "current_location",
+      header: "Current Location",
+      sortValue: (row) => transfer_current_location_label(row),
+      render: (row) => (
+        <span className="text-zinc-600">
+          {transfer_current_location_label(row)}
+        </span>
       ),
     },
     {

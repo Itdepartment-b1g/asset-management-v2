@@ -133,6 +133,7 @@ export const transferAsset = createAsyncThunk(
     asset_id: string;
     to_user_id: string;
     remarks?: string;
+    location_id?: string;
   }) => {
     const response = await fetch("/api/asset-transfer", {
       ...fetchOptions,
