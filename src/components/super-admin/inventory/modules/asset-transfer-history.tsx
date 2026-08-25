@@ -136,6 +136,9 @@ export default function AssetTransferHistory({
               <p className="mt-0.5 text-xs text-zinc-500">
                 {formatDateTime(transfer.transferred_at)} · by{" "}
                 {user_label(transfer.transferred_by)}
+                {transfer.to_user?.department?.name
+                  ? ` · ${transfer.to_user.department.name}`
+                  : ""}
                 {transfer.remarks && transfer.remarks !== "Initial assignment"
                   ? ` · ${transfer.remarks}`
                   : ""}

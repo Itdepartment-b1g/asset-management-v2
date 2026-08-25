@@ -19,6 +19,10 @@ export function transfer_from_label(transfer: AssetTransfer) {
   return user_label(transfer.from_user);
 }
 
+export function transfer_department_label(transfer: AssetTransfer) {
+  return transfer.to_user?.department?.name || "—";
+}
+
 export function transfer_remarks(transfer: AssetTransfer) {
   if (!transfer.remarks || transfer.remarks === "Initial assignment") {
     return "—";
@@ -42,6 +46,14 @@ export function AssetTransferTableView(): TableColumn<AssetTransfer>[] {
       sortValue: (row) => user_label(row.to_user),
       render: (row) => (
         <span className="text-zinc-700">{user_label(row.to_user)}</span>
+      ),
+    },
+    {
+      key: "department",
+      header: "Department",
+      sortValue: (row) => transfer_department_label(row),
+      render: (row) => (
+        <span className="text-zinc-600">{transfer_department_label(row)}</span>
       ),
     },
     {

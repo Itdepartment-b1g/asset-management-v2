@@ -138,8 +138,8 @@ const asset_detail_include = {
   transfers: {
     orderBy: { transferred_at: "desc" as const },
     include: {
-      from_user: { select: user_preview_select },
-      to_user: { select: user_preview_select },
+      from_user: { select: issued_to_select },
+      to_user: { select: issued_to_select },
       transferred_by: { select: user_preview_select },
     },
   },
