@@ -193,6 +193,7 @@ export default function AddAssetDialog({
               <label className="flex flex-col gap-1">
                 <span className="text-sm font-medium text-zinc-700">
                   Code name
+                  <span className="font-normal text-zinc-500"> (auto generated)</span>
                 </span>
                 <input
                   value={example_asset_code_name()}
@@ -200,10 +201,6 @@ export default function AddAssetDialog({
                   disabled
                   className={input_class}
                 />
-                <p className="text-xs text-zinc-500">
-                  Assigned automatically on save, for example{" "}
-                  {example_asset_code_name()}.
-                </p>
               </label>
 
               <label className="flex flex-col gap-1">
@@ -392,7 +389,7 @@ export default function AddAssetDialog({
                   onChange={(event) => set_vendor_name(event.target.value)}
                   disabled={loading}
                   className={input_class}
-                  placeholder="eg. PC Express, PC worth"
+                  placeholder="eg. PC Express, PC Worth, Silicon Valley, etc."
                 />
               </label>
 
