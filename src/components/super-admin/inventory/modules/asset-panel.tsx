@@ -34,6 +34,7 @@ import CardStats, {
 import AddAssetDialog, {
   type CreateAssetValues,
 } from "../dialogs/add-asset-dialog";
+import AssetQrDialog from "../dialogs/asset-qr-dialog";
 import DeleteAssetDialog from "../dialogs/delete-asset-dialog";
 import EditAssetDialog, {
   type EditAssetValues,
@@ -325,6 +326,10 @@ export default function AssetPanel() {
   const [editing, setEditing] = useState<AssetListItem | null>(null);
   const [transferring, setTransferring] = useState<AssetListItem | null>(null);
   const [deleting, setDeleting] = useState<AssetListItem | null>(null);
+  const [qrAsset, setQrAsset] = useState<{
+    asset_name: string;
+    code_name: string;
+  } | null>(null);
   const [conditions, setConditions] = useState<AssetLookup[]>([]);
   const [locations, setLocations] = useState<AssetLookup[]>([]);
   const [legends, setLegends] = useState<AssetLegend[]>([]);
@@ -447,6 +452,12 @@ export default function AssetPanel() {
       setEditing(row);
     },
     (row) => {
+      setQrAsset({
+        asset_name: row.asset_name,
+        code_name: row.code_name,
+      });
+    },
+    (row) => {
       setError(null);
       setSuccess(null);
       setTransferring(row);
@@ -517,6 +528,10 @@ export default function AssetPanel() {
       await loadPage(page, { manageLoading: false });
       setStatsRefreshKey((key) => key + 1);
       setCreating(false);
+      setQrAsset({
+        asset_name: created.asset_name,
+        code_name: created.code_name,
+      });
       toast.success(`Added ${created.asset_name} as ${created.code_name}`);
     } catch (e) {
       setError(getThunkErrorMessage(e, "Failed to add asset"));
@@ -786,6 +801,14 @@ export default function AssetPanel() {
             setDeleting(null);
           }}
           onClose={() => setDeleting(null)}
+        />
+      ) : null}
+
+      {qrAsset ? (
+        <AssetQrDialog
+          asset_name={qrAsset.asset_name}
+          code_name={qrAsset.code_name}
+          onClose={() => setQrAsset(null)}
         />
       ) : null}
     </section>

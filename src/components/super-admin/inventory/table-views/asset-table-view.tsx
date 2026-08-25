@@ -1,6 +1,12 @@
 "use client";
 
-import { ArrowRightLeft, EllipsisVertical, Pencil, Trash2 } from "lucide-react";
+import {
+  ArrowRightLeft,
+  EllipsisVertical,
+  Pencil,
+  QrCode,
+  Trash2,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import type { TableColumn } from "@/components/common/table-view";
@@ -31,11 +37,13 @@ const delete_button_class =
 function AssetRowActionsMenu({
   loading,
   onEdit,
+  onShowQr,
   onTransfer,
   onDelete,
 }: {
   loading: boolean;
   onEdit: () => void;
+  onShowQr: () => void;
   onTransfer: () => void;
   onDelete: () => void;
 }) {
@@ -111,6 +119,19 @@ function AssetRowActionsMenu({
             disabled={loading}
             onClick={(event) => {
               event.stopPropagation();
+              runAction(onShowQr);
+            }}
+          >
+            <QrCode aria-hidden className="h-3.5 w-3.5 text-violet-700" />
+            QR code
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            className={action_button_class}
+            disabled={loading}
+            onClick={(event) => {
+              event.stopPropagation();
               runAction(onTransfer);
             }}
           >
@@ -139,6 +160,7 @@ function AssetRowActionsMenu({
 export function AssetTableView(
   loading: boolean,
   onEdit: (row: AssetListItem) => void,
+  onShowQr: (row: AssetListItem) => void,
   onTransfer: (row: AssetListItem) => void,
   onDelete: (row: AssetListItem) => void,
 ): TableColumn<AssetListItem>[] {
@@ -251,6 +273,7 @@ export function AssetTableView(
         <AssetRowActionsMenu
           loading={loading}
           onEdit={() => onEdit(row)}
+          onShowQr={() => onShowQr(row)}
           onTransfer={() => onTransfer(row)}
           onDelete={() => onDelete(row)}
         />
