@@ -30,6 +30,23 @@ export async function POST(request: Request) {
   }
 }
 
+export async function PATCH(request: Request) {
+  const content_type = request.headers.get("content-type") ?? "";
+  if (!content_type.includes("multipart/form-data")) {
+    return NextResponse.json(
+      { error: "Expected multipart/form-data" },
+      { status: 400 },
+    );
+  }
+
+  try {
+    const form = await request.formData();
+    return assets_controller.update_asset(form);
+  } catch {
+    return NextResponse.json({ error: "Invalid form data" }, { status: 400 });
+  }
+}
+
 export async function DELETE(request: Request) {
   const id = new URL(request.url).searchParams.get("id");
   if (id === null) {

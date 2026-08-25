@@ -15,6 +15,7 @@ import { useAppDispatch } from "@/lib/store/hooks";
 import {
   addAsset,
   clearAssetPageCache,
+  editAsset,
   fetchAssetById,
   fetchAssets,
   removeAsset,
@@ -33,6 +34,9 @@ import AddAssetDialog, {
   type CreateAssetValues,
 } from "../dialogs/add-asset-dialog";
 import DeleteAssetDialog from "../dialogs/delete-asset-dialog";
+import EditAssetDialog, {
+  type EditAssetValues,
+} from "../dialogs/edit-asset-dialog";
 import TransferAssetDialog from "../dialogs/transfer-asset-dialog";
 import {
   AssetTableView,
@@ -297,6 +301,7 @@ export default function AssetPanel() {
   const [limit, setLimit] = useState(10);
 
   const [creating, setCreating] = useState(false);
+  const [editing, setEditing] = useState<AssetListItem | null>(null);
   const [transferring, setTransferring] = useState<AssetListItem | null>(null);
   const [deleting, setDeleting] = useState<AssetListItem | null>(null);
   const [conditions, setConditions] = useState<AssetLookup[]>([]);
@@ -414,6 +419,12 @@ export default function AssetPanel() {
     (row) => {
       setError(null);
       setSuccess(null);
+      void loadLookups();
+      setEditing(row);
+    },
+    (row) => {
+      setError(null);
+      setSuccess(null);
       setTransferring(row);
     },
     (row) => setDeleting(row),
@@ -467,6 +478,57 @@ export default function AssetPanel() {
       toast.success(`Added ${created.asset_name} as ${created.code_name}`);
     } catch (e) {
       setError(getThunkErrorMessage(e, "Failed to add asset"));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleEditAsset(id: string, values: EditAssetValues) {
+    const asset_name = values.asset_name.trim();
+    if (!asset_name) return;
+
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      const form = new FormData();
+      form.set("id", id);
+      form.set("asset_name", asset_name);
+      form.set("current_condition_id", values.current_condition_id);
+      form.set("condition_assignment_id", values.condition_assignment_id);
+      form.set("status", values.status);
+
+      const optional_fields: Array<[string, string]> = [
+        ["serial_number", values.serial_number],
+        ["purchase_date", values.purchase_date],
+        ["remarks", values.remarks],
+        ["vendor_name", values.vendor_name],
+        ["cost_value", values.cost_value],
+        ["salvage_value", values.salvage_value],
+        ["warranty_end_date", values.warranty_end_date],
+        ["useful_life_end_date", values.useful_life_end_date],
+        ["location_id", values.location_id],
+        ["legend_id", values.legend_id],
+      ];
+
+      for (const [key, value] of optional_fields) {
+        if (value.trim()) form.set(key, value.trim());
+      }
+
+      if (values.warranty_photo) {
+        form.set("warranty_photo", values.warranty_photo);
+      }
+      if (values.receipt_photo) {
+        form.set("receipt_photo", values.receipt_photo);
+      }
+
+      const updated = await dispatch(editAsset(form)).unwrap();
+      clearAssetPageCache();
+      await loadPage(page, { manageLoading: false });
+      setEditing(null);
+      toast.success(`Updated ${updated.asset_name}`);
+    } catch (e) {
+      setError(getThunkErrorMessage(e, "Failed to update asset"));
     } finally {
       setLoading(false);
     }
@@ -552,8 +614,8 @@ export default function AssetPanel() {
       {loading || error || success ? (
         <div className="mb-3">
           <AsyncStatus
-            loading={loading && !creating && !transferring && !deleting}
-            error={creating || transferring || deleting ? null : error}
+            loading={loading && !creating && !editing && !transferring && !deleting}
+            error={creating || editing || transferring || deleting ? null : error}
             success={success}
             loadingMessage="Loading assets..."
           />
@@ -601,6 +663,26 @@ export default function AssetPanel() {
           }}
           onClose={() => {
             setCreating(false);
+            setError(null);
+          }}
+        />
+      ) : null}
+
+      {editing ? (
+        <EditAssetDialog
+          key={editing.id}
+          assetId={editing.id}
+          loading={loading}
+          lookupsLoading={lookupsLoading}
+          error={error}
+          conditions={conditions}
+          locations={locations}
+          legends={legends}
+          onSave={(values) => {
+            void handleEditAsset(editing.id, values);
+          }}
+          onClose={() => {
+            setEditing(null);
             setError(null);
           }}
         />

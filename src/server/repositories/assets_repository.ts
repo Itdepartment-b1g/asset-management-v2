@@ -50,6 +50,24 @@ export type CreateAssetInput = {
   photos?: AssetPhotoInput[];
 };
 
+export type UpdateAssetInput = {
+  asset_name: string;
+  serial_number?: string | null;
+  purchase_date?: Date | null;
+  current_condition_id: string;
+  condition_assignment_id: string;
+  status: AssetStatus;
+  remarks?: string | null;
+  vendor_name?: string | null;
+  cost_value?: number | null;
+  salvage_value?: number | null;
+  warranty_end_date?: Date | null;
+  useful_life_end_date?: Date | null;
+  location_id?: string | null;
+  legend_id?: string | null;
+  photos?: AssetPhotoInput[];
+};
+
 export type TransferAssetInput = {
   to_user_id: string;
   remarks?: string | null;
@@ -258,6 +276,50 @@ export function validate_photo_file(input: {
     byte_size: input.byte_size,
     data: input.data,
   };
+}
+
+async function assert_update_relations(input: UpdateAssetInput) {
+  if (!input.current_condition_id?.trim()) {
+    throw new ValidationError("Current condition is required");
+  }
+  const current_condition = await prisma.conditions.findUnique({
+    where: { id: input.current_condition_id },
+    select: { id: true },
+  });
+  if (!current_condition) {
+    throw new ValidationError("Current condition not found");
+  }
+
+  if (!input.condition_assignment_id?.trim()) {
+    throw new ValidationError("Condition assignment is required");
+  }
+  const condition_assignment = await prisma.conditions.findUnique({
+    where: { id: input.condition_assignment_id },
+    select: { id: true },
+  });
+  if (!condition_assignment) {
+    throw new ValidationError("Condition assignment not found");
+  }
+
+  if (input.location_id) {
+    const location = await prisma.locations.findUnique({
+      where: { id: input.location_id },
+      select: { id: true },
+    });
+    if (!location) {
+      throw new ValidationError("Location not found");
+    }
+  }
+
+  if (input.legend_id) {
+    const legend = await prisma.legend.findUnique({
+      where: { id: input.legend_id },
+      select: { id: true },
+    });
+    if (!legend) {
+      throw new ValidationError("Legend not found");
+    }
+  }
 }
 
 async function assert_optional_relations(input: CreateAssetInput) {
@@ -486,6 +548,79 @@ export const assets_repository = {
     }
 
     throw new ValidationError("Could not generate a unique asset code");
+  },
+
+  async update_asset(actor_id: string, id: string, input: UpdateAssetInput) {
+    await assert_privileged_actor(actor_id);
+
+    const existing = await prisma.asset_information.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!existing) {
+      throw new AssetNotFoundError();
+    }
+
+    const asset_name = validate_asset_name(input.asset_name);
+    if (!is_asset_status(input.status)) {
+      throw new ValidationError("Status must be active, inactive, or stored");
+    }
+
+    const photos = (input.photos ?? []).map((photo) =>
+      validate_photo_file(photo),
+    );
+    const kinds = new Set(photos.map((photo) => photo.kind));
+    if (kinds.size !== photos.length) {
+      throw new ValidationError("Each photo kind can only be uploaded once");
+    }
+
+    await assert_update_relations(input);
+
+    const serial_number = validate_optional_text(
+      input.serial_number,
+      "Serial number",
+    );
+    const remarks = validate_optional_text(input.remarks, "Remarks");
+    const vendor_name = validate_optional_text(input.vendor_name, "Vendor name");
+
+    return prisma.$transaction(async (tx) => {
+      for (const photo of photos) {
+        await tx.asset_photo.deleteMany({
+          where: { asset_id: id, kind: photo.kind },
+        });
+        await tx.asset_photo.create({
+          data: {
+            asset_id: id,
+            kind: photo.kind,
+            file_name: photo.file_name,
+            mime_type: photo.mime_type,
+            byte_size: photo.byte_size,
+            data: Buffer.from(photo.data),
+          },
+        });
+      }
+
+      return tx.asset_information.update({
+        where: { id },
+        data: {
+          asset_name,
+          serial_number,
+          purchase_date: input.purchase_date ?? null,
+          current_condition_id: input.current_condition_id,
+          condition_assignment_id: input.condition_assignment_id,
+          status: input.status,
+          remarks,
+          vendor_name,
+          cost_value: input.cost_value ?? null,
+          salvage_value: input.salvage_value ?? null,
+          warranty_end_date: input.warranty_end_date ?? null,
+          useful_life_end_date: input.useful_life_end_date ?? null,
+          location_id: input.location_id ?? null,
+          legend_id: input.legend_id ?? null,
+        },
+        include: asset_detail_include,
+      });
+    });
   },
 
   async delete_asset(actor_id: string, id: string) {

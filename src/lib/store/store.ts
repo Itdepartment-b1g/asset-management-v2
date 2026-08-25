@@ -1,5 +1,5 @@
 import { configureStore } from "@reduxjs/toolkit";
-import assetsReducer, { addAsset } from "@/lib/store/slices/asset-slice";
+import assetsReducer, { addAsset, editAsset } from "@/lib/store/slices/asset-slice";
 import authReducer from "@/lib/store/slices/auth-slices";
 import departmentsReducer from "@/lib/store/slices/department-slice";
 import legendsReducer from "@/lib/store/slices/legend-slice";
@@ -18,7 +18,7 @@ export const store = configureStore({
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {
-        ignoredActions: [addAsset.pending.type],
+        ignoredActions: [addAsset.pending.type, editAsset.pending.type],
       },
     }),
 });

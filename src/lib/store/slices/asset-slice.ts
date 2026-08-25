@@ -127,6 +127,18 @@ export const addAsset = createAsyncThunk(
   },
 );
 
+export const editAsset = createAsyncThunk(
+  "assets/update",
+  async (form: FormData) => {
+    const response = await fetch("/api/asset", {
+      ...fetchOptions,
+      method: "PATCH",
+      body: form,
+    });
+    return parseResponse<AssetItem>(response);
+  },
+);
+
 export const transferAsset = createAsyncThunk(
   "assets/transfer",
   async (input: {
@@ -186,6 +198,18 @@ const assetsSlice = createSlice({
       .addCase(addAsset.fulfilled, (state, action: PayloadAction<AssetItem>) => {
         clearAssetPageCache();
         state.items.unshift(action.payload);
+      })
+      .addCase(editAsset.fulfilled, (state, action: PayloadAction<AssetItem>) => {
+        clearAssetPageCache();
+        const index = state.items.findIndex(
+          (item) => item.id === action.payload.id,
+        );
+        if (index !== -1) {
+          state.items[index] = {
+            ...state.items[index],
+            ...action.payload,
+          };
+        }
       })
       .addCase(
         transferAsset.fulfilled,

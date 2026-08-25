@@ -14,6 +14,7 @@ import {
   type AssetPhotoKind,
   type CreateAssetInput,
   type TransferAssetInput,
+  type UpdateAssetInput,
 } from "@/server/repositories/assets_repository";
 
 function form_string(form: FormData, key: string) {
@@ -125,6 +126,75 @@ async function parse_create_form(form: FormData): Promise<CreateAssetInput> {
   };
 }
 
+async function parse_update_form(form: FormData): Promise<{
+  id: string;
+  input: UpdateAssetInput;
+}> {
+  const id = form_string(form, "id");
+  const asset_name = form_string(form, "asset_name");
+  const current_condition_id = form_string(form, "current_condition_id");
+  const condition_assignment_id = form_string(form, "condition_assignment_id");
+  const status = form_string(form, "status");
+
+  if (!id) {
+    throw new ValidationError("id is required");
+  }
+  if (!asset_name) {
+    throw new ValidationError("asset_name is required");
+  }
+  if (!current_condition_id) {
+    throw new ValidationError("current_condition_id is required");
+  }
+  if (!condition_assignment_id) {
+    throw new ValidationError("condition_assignment_id is required");
+  }
+  if (!status || !is_asset_status(status)) {
+    throw new ValidationError("status must be active, inactive, or stored");
+  }
+
+  const photos: AssetPhotoInput[] = [];
+  const warranty_photo = await parse_photo(form, "warranty_photo", "warranty");
+  const receipt_photo = await parse_photo(form, "receipt_photo", "receipt");
+  if (warranty_photo) photos.push(warranty_photo);
+  if (receipt_photo) photos.push(receipt_photo);
+
+  return {
+    id,
+    input: {
+      asset_name,
+      serial_number: form_string(form, "serial_number") ?? null,
+      purchase_date: parse_optional_date(
+        form_string(form, "purchase_date"),
+        "Purchase date",
+      ),
+      current_condition_id,
+      condition_assignment_id,
+      status,
+      remarks: form_string(form, "remarks") ?? null,
+      vendor_name: form_string(form, "vendor_name") ?? null,
+      cost_value: parse_optional_number(
+        form_string(form, "cost_value"),
+        "Cost value",
+      ),
+      salvage_value: parse_optional_number(
+        form_string(form, "salvage_value"),
+        "Salvage value",
+      ),
+      warranty_end_date: parse_optional_date(
+        form_string(form, "warranty_end_date"),
+        "Warranty end date",
+      ),
+      useful_life_end_date: parse_optional_date(
+        form_string(form, "useful_life_end_date"),
+        "Useful life end date",
+      ),
+      location_id: form_string(form, "location_id") ?? null,
+      legend_id: form_string(form, "legend_id") ?? null,
+      photos,
+    },
+  };
+}
+
 function map_asset_error(error: unknown) {
   if (error instanceof AssetForbiddenError) {
     return NextResponse.json({ error: error.message }, { status: 403 });
@@ -222,6 +292,25 @@ export const assets_controller = {
       const input = await parse_create_form(form);
       const asset = await assets_repository.create_asset(auth_user.id, input);
       return NextResponse.json(asset, { status: 201 });
+    } catch (error) {
+      return map_asset_error(error);
+    }
+  },
+
+  async update_asset(form: FormData) {
+    const auth_user = await requireAuthUser();
+    if (auth_user instanceof NextResponse) {
+      return auth_user;
+    }
+
+    try {
+      const { id, input } = await parse_update_form(form);
+      const asset = await assets_repository.update_asset(
+        auth_user.id,
+        id,
+        input,
+      );
+      return NextResponse.json(asset);
     } catch (error) {
       return map_asset_error(error);
     }
