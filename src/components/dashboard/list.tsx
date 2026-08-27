@@ -1,9 +1,9 @@
 "use client";
 
-export default function SuperAdminList() {
+export default function DashboardList() {
     return (
         <div>
-            <h1>Super Admin List</h1>
+            <h1>Dashboard List</h1>
         </div>
     )
 }
