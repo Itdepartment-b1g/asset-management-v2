@@ -7,7 +7,9 @@ import {
   type PaginationInput,
 } from "@/server/lib/pagination";
 
-const PRIVILEGED_ROLES = new Set(["super_admin", "admin"]);
+import { ASSET_PRIVILEGED_ROLES } from "@/lib/auth/roles";
+
+const PRIVILEGED_ROLES = ASSET_PRIVILEGED_ROLES;
 
 export class LegendForbiddenError extends Error {
   constructor() {

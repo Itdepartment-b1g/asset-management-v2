@@ -4,7 +4,9 @@ import { prisma } from "@/server/prisma/client";
 import { paginated_query, parse_pagination, type PaginationInput } from "@/server/lib/pagination";
 import { DepartmentNotFoundError } from "./departments_repository";
 
-const privileged_roles = new Set(["super_admin", "admin"]);
+import { ASSET_PRIVILEGED_ROLES } from "@/lib/auth/roles";
+
+const privileged_roles = ASSET_PRIVILEGED_ROLES;
 
 export class ConditionForbiddenError extends Error {
     constructor(){

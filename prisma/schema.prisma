@@ -10,7 +10,11 @@ datasource db {
 enum user_role {
   super_admin
   admin
+  asset_manager
   employee
+  department_head
+  head_operations
+  operations_manager
 }
 
 enum asset_photo_kind {

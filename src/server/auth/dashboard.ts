@@ -2,23 +2,34 @@ import "server-only";
 
 import { redirect } from "next/navigation";
 import {
-  get_dashboard_path,
+  APP_PATHS,
+  get_effective_role,
   type DashboardRole,
 } from "@/lib/auth/dashboard";
-import { getSessionUser } from "@/server/auth/session";
+import { getSessionUser, type SessionUser } from "@/server/auth/session";
 
-// Require a signed-in user with a specific dashboard role.
-// Wrong role -> redirect to that user's own dashboard.
-// Not signed in -> redirect to /login.
-export async function require_dashboard_role(required_role: DashboardRole) {
+export type AppSessionUser = SessionUser & {
+  role: DashboardRole;
+};
+
+export async function require_app_user(): Promise<AppSessionUser> {
   const user = await getSessionUser();
 
   if (!user) {
-    redirect("/login");
+    redirect(APP_PATHS.login);
   }
 
-  if (user.role !== required_role) {
-    redirect(get_dashboard_path(user.role));
+  return {
+    ...user,
+    role: get_effective_role(user.role),
+  };
+}
+
+export async function require_app_roles(allowed_roles: DashboardRole[]) {
+  const user = await require_app_user();
+
+  if (!allowed_roles.includes(user.role)) {
+    redirect(APP_PATHS.home);
   }
 
   return user;

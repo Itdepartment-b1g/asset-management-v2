@@ -17,8 +17,8 @@ type AppSideBarProps = {
 };
 
 function is_active_path(pathname: string, href: string) {
-  if (href === "/super-admin" || href === "/admin" || href === "/employee") {
-    return pathname === href;
+  if (href === "/") {
+    return pathname === "/";
   }
 
   return pathname === href || pathname.startsWith(`${href}/`);

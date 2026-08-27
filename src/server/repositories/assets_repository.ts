@@ -7,7 +7,9 @@ import {
   type PaginationInput,
 } from "@/server/lib/pagination";
 
-const privileged_roles = new Set(["super_admin", "admin"]);
+import { ASSET_PRIVILEGED_ROLES } from "@/lib/auth/roles";
+
+const privileged_roles = ASSET_PRIVILEGED_ROLES;
 
 const ASSET_STATUSES = ["active", "inactive", "stored"] as const;
 const PHOTO_KINDS = ["warranty", "receipt"] as const;

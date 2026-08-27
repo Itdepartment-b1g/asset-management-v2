@@ -8,13 +8,22 @@ import {
   parse_pagination,
   type PaginationInput,
 } from "@/server/lib/pagination";
+import { ROLES, USER_MANAGEMENT_ROLES } from "@/lib/auth/roles";
 
-const PRIVILEGED_ROLES = new Set(["super_admin", "admin"]);
-const MANAGER_ROLES = new Set(["super_admin"]);
+const PRIVILEGED_ROLES = USER_MANAGEMENT_ROLES;
+const MANAGER_ROLES = new Set<string>([ROLES.super_admin]);
 
 const CREATABLE_ROLES_BY_ACTOR: Record<string, Set<string>> = {
-  super_admin: new Set(["super_admin", "admin", "employee"]),
-  admin: new Set(["employee"]),
+  super_admin: new Set([
+    ROLES.super_admin,
+    ROLES.admin,
+    ROLES.asset_manager,
+    ROLES.employee,
+    ROLES.department_head,
+    ROLES.head_operations,
+    ROLES.operations_manager,
+  ]),
+  admin: new Set([ROLES.employee]),
 };
 
 const user_with_relations = {
@@ -70,6 +79,14 @@ export type CreateUserData = {
   password?: string;
 };
 
+export type HrisUserData = {
+  hris_employee_id: string;
+  employee_code: string;
+  email: string;
+  full_name: string;
+  is_active: boolean;
+};
+
 async function assert_can_create_user(
   actor_id: string,
   role: string | null | undefined,
@@ -104,6 +121,51 @@ export const auth_repository = {
   find_by_id_with_relations(id: string) {
     return prisma.user.findUnique({
       where: { id },
+      include: user_with_relations,
+    });
+  },
+
+  find_by_employee_code(employee_code: string) {
+    return prisma.user.findUnique({ where: { employee_code } });
+  },
+
+  // Create or update a profile from HRIS SSO. Role is never overwritten.
+  async upsert_from_hris({
+    supabase_user_id,
+    hris_employee_id,
+    employee_code,
+    email,
+    full_name,
+    is_active,
+  }: HrisUserData & { supabase_user_id: string }) {
+    const existing = await prisma.user.findFirst({
+      where: {
+        OR: [{ employee_code }, { hris_employee_id }],
+      },
+    });
+
+    const sync_data = {
+      employee_code,
+      hris_employee_id,
+      email,
+      full_name,
+      is_active,
+      last_login_at: new Date(),
+    };
+
+    if (existing) {
+      return prisma.user.update({
+        where: { id: existing.id },
+        data: sync_data,
+        include: user_with_relations,
+      });
+    }
+
+    return prisma.user.create({
+      data: {
+        id: supabase_user_id,
+        ...sync_data,
+      },
       include: user_with_relations,
     });
   },

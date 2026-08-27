@@ -2,7 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { AuthForm } from "@/components/auth/auth-form";
-import { get_dashboard_path } from "@/lib/auth/dashboard";
+import { APP_PATHS } from "@/lib/auth/dashboard";
 import { loginUser } from "@/lib/store/slices/auth-slices";
 import { useAppDispatch } from "@/lib/store/hooks";
 
@@ -35,7 +35,7 @@ export default function LoginList() {
 
   async function handleLogin(email: string, password: string) {
     const user = await dispatch(loginUser({ email, password })).unwrap();
-    const destination = next ?? get_dashboard_path(user.role);
+    const destination = next ?? APP_PATHS.home;
 
     router.push(destination);
     router.refresh();

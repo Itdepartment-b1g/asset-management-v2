@@ -1,14 +1,14 @@
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import LoginList from "@/components/login/list";
-import { get_dashboard_path } from "@/lib/auth/dashboard";
+import { APP_PATHS } from "@/lib/auth/dashboard";
 import { getSessionUser } from "@/server/auth/session";
 
 export default async function LoginPage() {
   const user = await getSessionUser();
 
-  if (user?.role) {
-    redirect(get_dashboard_path(user.role));
+  if (user) {
+    redirect(APP_PATHS.home);
   }
 
   return (

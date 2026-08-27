@@ -7,7 +7,7 @@ import {
 import type {
   AssetItem,
   AssetListItem,
-} from "@/components/super-admin/inventory/lib/asset-types";
+} from "@/components/inventory/lib/asset-types";
 
 export type PaginationMeta = {
   page: number;
