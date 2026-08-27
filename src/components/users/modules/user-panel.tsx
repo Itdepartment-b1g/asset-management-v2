@@ -2,71 +2,50 @@
 
 import { Plus } from "lucide-react";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 import { AsyncStatus } from "@/components/common/async-status";
 import Dropdown from "@/components/common/dropdown";
-import Pagination, {
-  type PaginationMeta,
-} from "@/components/common/pagination";
+import Pagination from "@/components/common/pagination";
 import SearchInput from "@/components/common/search-input";
 import TableView from "@/components/common/table-view";
-
+import type { ManagedUserRole } from "@/components/lib/user-roles";
+import { getThunkErrorMessage } from "@/lib/store/error";
+import { useAppDispatch, useAppSelector } from "@/lib/store/hooks";
+import { fetchDepartments } from "@/lib/store/slices/department-slice";
 import {
-  UserTableView,
-  type UserDepartment,
+  clearUserPageCache,
+  clearUsersError,
+  createUser,
+  fetchUsers,
+  updateUser,
   type UserItem,
-} from "../table-views/user-table-view";
+} from "@/lib/store/slices/user-slice";
+
 import AddUserDialog from "../dialogs/add-user-dialog";
 import AssignRoleDialog from "../dialogs/assign-role-dialog";
 import EditUserDialog from "../dialogs/edit-user-dialog";
-import type { ManagedUserRole } from "@/components/lib/user-roles";
-
-type PaginatedUsers = {
-  data: UserItem[];
-  meta: PaginationMeta;
-};
-
-type PaginatedDepartments = {
-  data: UserDepartment[];
-  meta: PaginationMeta;
-};
+import { UserTableView } from "../table-views/user-table-view";
 
 const ALL_DEPARTMENTS = "all";
 
-const userPageCache = new Map<string, PaginatedUsers>();
-
-const fetchOptions: RequestInit = {
-  credentials: "include",
-};
-
-async function parseResponse<T>(response: Response): Promise<T> {
-  const data = await response.json();
-
-  if (!response.ok) {
-    const message = (data as { error?: string }).error ?? "Request failed";
-    const error = new Error(message) as Error & { status?: number };
-    error.status = response.status;
-    throw error;
-  }
-
-  return data as T;
-}
-
 export default function UserPanel() {
-  const [items, setItems] = useState<UserItem[]>([]);
-  const [meta, setMeta] = useState<PaginationMeta | null>(null);
-
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const dispatch = useAppDispatch();
+  const {
+    items,
+    meta,
+    loading: usersLoading,
+    error: usersError,
+  } = useAppSelector((state) => state.users);
+  const departments = useAppSelector((state) => state.departments.items);
 
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
-
   const [creating, setCreating] = useState(false);
   const [assigning, setAssigning] = useState<UserItem | null>(null);
   const [editing, setEditing] = useState<UserItem | null>(null);
-  const [departments, setDepartments] = useState<UserDepartment[]>([]);
+  const [mutating, setMutating] = useState(false);
+  const [dialogError, setDialogError] = useState<string | null>(null);
   const [searchInput, setSearchInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState<string | null>(null);
@@ -74,108 +53,37 @@ export default function UserPanel() {
   async function loadPage(
     pageToLoad: number,
     opts?: {
-      manageLoading?: boolean;
       limit?: number;
       search?: string;
       department_id?: string | null;
       bypassCache?: boolean;
     },
   ) {
-    const manageLoading = opts?.manageLoading ?? true;
-    const limitToUse = opts?.limit ?? limit;
-    const searchToUse = opts?.search ?? searchQuery;
-    const departmentToUse =
-      opts?.department_id === undefined
-        ? departmentFilter
-        : opts.department_id;
-    const bypassCache = opts?.bypassCache ?? false;
+    const result = await dispatch(
+      fetchUsers({
+        page: pageToLoad,
+        limit: opts?.limit ?? limit,
+        search: opts?.search ?? searchQuery,
+        department_id:
+          opts?.department_id === undefined
+            ? departmentFilter
+            : opts.department_id,
+        bypassCache: opts?.bypassCache,
+      }),
+    ).unwrap();
 
-    if (manageLoading) {
-      setLoading(true);
-      setError(null);
-      setSuccess(null);
-    }
-
-    try {
-      const cacheKey = `/api/auth/users|page=${pageToLoad}|limit=${limitToUse}|search=${searchToUse}|department=${departmentToUse ?? ""}`;
-      if (!bypassCache) {
-        const cached = userPageCache.get(cacheKey);
-        if (cached) {
-          setItems(cached.data);
-          setMeta(cached.meta);
-          setPage(cached.meta.page);
-          return;
-        }
-      }
-
-      const params = new URLSearchParams();
-      params.set("page", String(pageToLoad));
-      params.set("limit", String(limitToUse));
-      if (searchToUse) {
-        params.set("search", searchToUse);
-      }
-      if (departmentToUse) {
-        params.set("department_id", departmentToUse);
-      }
-
-      const response = await fetch(`/api/auth/users?${params.toString()}`, {
-        ...fetchOptions,
-        cache: "no-store",
-      });
-
-      const payload = await parseResponse<PaginatedUsers>(response);
-      userPageCache.set(cacheKey, payload);
-      setItems(payload.data);
-      setMeta(payload.meta);
-      setPage(payload.meta.page);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to load users");
-    } finally {
-      if (manageLoading) setLoading(false);
-    }
-  }
-
-  function apply_user_update(updated: UserItem) {
-    setItems((current) =>
-      current.map((item) => (item.id === updated.id ? { ...item, ...updated } : item)),
-    );
-
-    for (const [key, cached] of userPageCache.entries()) {
-      userPageCache.set(key, {
-        ...cached,
-        data: cached.data.map((item) =>
-          item.id === updated.id ? { ...item, ...updated } : item,
-        ),
-      });
-    }
-  }
-
-  async function loadDepartments() {
-    try {
-      const params = new URLSearchParams();
-      params.set("page", "1");
-      params.set("limit", "100");
-
-      const response = await fetch(`/api/department?${params.toString()}`, {
-        ...fetchOptions,
-        cache: "no-store",
-      });
-      const payload = await parseResponse<PaginatedDepartments>(response);
-      setDepartments(payload.data);
-    } catch {
-      setDepartments([]);
-    }
+    setPage(result.meta.page);
   }
 
   useEffect(() => {
     const t = window.setTimeout(() => {
-      void loadDepartments();
+      void dispatch(fetchDepartments({ page: 1, limit: 100 }));
     }, 0);
 
     return () => {
       window.clearTimeout(t);
     };
-  }, []);
+  }, [dispatch]);
 
   useEffect(() => {
     const nextSearch = searchInput.trim();
@@ -185,7 +93,8 @@ export default function UserPanel() {
       void loadPage(1, {
         search: nextSearch,
         department_id: departmentFilter,
-        manageLoading: nextSearch === searchQuery,
+      }).catch(() => {
+        /* error stored in redux */
       });
     }, delay);
 
@@ -196,7 +105,7 @@ export default function UserPanel() {
   }, [searchInput, departmentFilter]);
 
   const columns = UserTableView(
-    loading,
+    usersLoading || mutating,
     (row) => setEditing(row),
     (row) => setAssigning(row),
   );
@@ -215,31 +124,30 @@ export default function UserPanel() {
 
     if (!full_name || !email || !password || !department_id) return;
 
-    setLoading(true);
-    setError(null);
-    setSuccess(null);
+    setMutating(true);
+    setDialogError(null);
+    dispatch(clearUsersError());
+
     try {
-      const response = await fetch("/api/auth/create-user", {
-        ...fetchOptions,
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      await dispatch(
+        createUser({
           full_name,
           email,
           password,
           role: values.role,
           department_id,
         }),
-      });
-      await parseResponse<UserItem>(response);
-      userPageCache.clear();
-      await loadPage(page, { manageLoading: false, bypassCache: true });
+      ).unwrap();
+      clearUserPageCache();
+      await loadPage(page, { bypassCache: true });
       setCreating(false);
-      setSuccess(`Added ${full_name}. Temporary password: ${password}`);
+      toast.success(`Added ${full_name}. Temporary password: ${password}`);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to add user");
+      const message = getThunkErrorMessage(e, "Failed to add user");
+      setDialogError(message);
+      toast.error(message);
     } finally {
-      setLoading(false);
+      setMutating(false);
     }
   }
 
@@ -253,37 +161,34 @@ export default function UserPanel() {
     const department_id = values.department_id.trim();
     if (!department_id) return;
 
-    setLoading(true);
-    setError(null);
-    setSuccess(null);
+    setMutating(true);
+    setDialogError(null);
+    dispatch(clearUsersError());
 
     try {
-      const response = await fetch("/api/auth/update-user", {
-        ...fetchOptions,
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      const updated = await dispatch(
+        updateUser({
           id,
           role: values.role,
           department_id,
         }),
-      });
-      const updated = await parseResponse<UserItem>(response);
-      apply_user_update(updated);
-      userPageCache.clear();
-      await loadPage(page, { manageLoading: false, bypassCache: true });
+      ).unwrap();
+      clearUserPageCache();
+      await loadPage(page, { bypassCache: true });
       setAssigning(null);
-      setSuccess(
+      toast.success(
         `Assigned ${updated.full_name || updated.email || "user"} as ${values.role.replace("_", " ")}.`,
       );
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to assign role");
+      const message = getThunkErrorMessage(e, "Failed to assign role");
+      setDialogError(message);
+      toast.error(message);
     } finally {
-      setLoading(false);
+      setMutating(false);
     }
   }
 
-  async function updateUser(
+  async function saveUser(
     id: string,
     values: {
       full_name: string;
@@ -297,15 +202,13 @@ export default function UserPanel() {
     const email = values.email.trim();
     if (!full_name || !email) return;
 
-    setLoading(true);
-    setError(null);
-    setSuccess(null);
+    setMutating(true);
+    setDialogError(null);
+    dispatch(clearUsersError());
+
     try {
-      const response = await fetch("/api/auth/update-user", {
-        ...fetchOptions,
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      await dispatch(
+        updateUser({
           id,
           full_name,
           email,
@@ -315,23 +218,25 @@ export default function UserPanel() {
             : {}),
           password: values.password,
         }),
-      });
-      const updated = await parseResponse<UserItem>(response);
-      apply_user_update(updated);
-      userPageCache.clear();
-      await loadPage(page, { manageLoading: false, bypassCache: true });
+      ).unwrap();
+      clearUserPageCache();
+      await loadPage(page, { bypassCache: true });
       setEditing(null);
-      setSuccess(
+      toast.info(
         values.password
           ? `Updated ${full_name}. New temporary password: ${values.password}`
           : `Updated ${full_name}`,
       );
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to update user");
+      const message = getThunkErrorMessage(e, "Failed to update user");
+      setDialogError(message);
+      toast.error(message);
     } finally {
-      setLoading(false);
+      setMutating(false);
     }
   }
+
+  const busy = usersLoading || mutating;
 
   return (
     <section>
@@ -362,11 +267,11 @@ export default function UserPanel() {
         </div>
         <button
           type="button"
-          disabled={loading}
+          disabled={busy}
           className="inline-flex items-center justify-center gap-2 rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-violet-800 disabled:opacity-50"
           onClick={() => {
-            setError(null);
-            setSuccess(null);
+            setDialogError(null);
+            dispatch(clearUsersError());
             setCreating(true);
           }}
         >
@@ -375,12 +280,23 @@ export default function UserPanel() {
         </button>
       </div>
 
-      {loading || error || success ? (
+      {usersLoading && !creating && !editing && !assigning ? (
         <div className="mb-3">
           <AsyncStatus
-            loading={loading && !creating && !editing && !assigning}
-            error={creating || editing || assigning ? null : error}
-            success={success}
+            loading
+            error={null}
+            success={null}
+            loadingMessage="Loading users..."
+          />
+        </div>
+      ) : null}
+
+      {!creating && !editing && !assigning && usersError ? (
+        <div className="mb-3">
+          <AsyncStatus
+            loading={false}
+            error={usersError}
+            success={null}
             loadingMessage="Loading users..."
           />
         </div>
@@ -401,7 +317,7 @@ export default function UserPanel() {
       {meta ? (
         <Pagination
           meta={meta}
-          disabled={loading}
+          disabled={busy}
           onPrev={() => void loadPage(meta.page - 1)}
           onNext={() => void loadPage(meta.page + 1)}
           onLimitChange={(nextLimit) => {
@@ -413,15 +329,15 @@ export default function UserPanel() {
 
       {creating ? (
         <AddUserDialog
-          loading={loading}
-          error={error}
+          loading={mutating}
+          error={dialogError}
           departments={departments}
           onSave={(values) => {
             void addUser(values);
           }}
           onClose={() => {
             setCreating(false);
-            setError(null);
+            setDialogError(null);
           }}
         />
       ) : null}
@@ -430,15 +346,15 @@ export default function UserPanel() {
         <AssignRoleDialog
           key={assigning.id}
           row={assigning}
-          loading={loading}
-          error={error}
+          loading={mutating}
+          error={dialogError}
           departments={departments}
           onSave={(values) => {
             void assignRole(assigning.id, values);
           }}
           onClose={() => {
             setAssigning(null);
-            setError(null);
+            setDialogError(null);
           }}
         />
       ) : null}
@@ -447,15 +363,15 @@ export default function UserPanel() {
         <EditUserDialog
           key={editing.id}
           row={editing}
-          loading={loading}
-          error={error}
+          loading={mutating}
+          error={dialogError}
           departments={departments}
           onSave={(values) => {
-            void updateUser(editing.id, values);
+            void saveUser(editing.id, values);
           }}
           onClose={() => {
             setEditing(null);
-            setError(null);
+            setDialogError(null);
           }}
         />
       ) : null}

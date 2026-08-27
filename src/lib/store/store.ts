@@ -6,6 +6,7 @@ import holdersReducer from "@/lib/store/slices/holder-slice";
 import legendsReducer from "@/lib/store/slices/legend-slice";
 import locationsReducer from "@/lib/store/slices/location-slice";
 import conditionsReducer from "@/lib/store/slices/condition-slice";
+import usersReducer from "@/lib/store/slices/user-slice";
 
 export const store = configureStore({
   reducer: {
@@ -16,6 +17,7 @@ export const store = configureStore({
     holders: holdersReducer,
     departments: departmentsReducer,
     conditions: conditionsReducer,
+    users: usersReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
