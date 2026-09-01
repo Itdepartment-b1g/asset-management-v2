@@ -72,9 +72,12 @@ const menu_items_by_role = {
   admin: admin_menu_items,
   asset_manager: asset_manager_menu_items,
   employee: employee_menu_items,
+  department_head: employee_menu_items,
+  head_operations: employee_menu_items,
+  operations_manager: employee_menu_items,
 } satisfies Record<DashboardRole, SideBarMenuItem[]>;
 
-export function get_side_bar_menu_items(role: DashboardRole) {
+export function get_side_bar_menu_items(role: DashboardRole): SideBarMenuItem[] {
   return menu_items_by_role[role];
 }
 
